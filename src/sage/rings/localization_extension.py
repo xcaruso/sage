@@ -1,4 +1,4 @@
-from sage.rings.ring import CommutativeRing, CommutativeAlgebra
+from sage.rings.ring import CommutativeRing, CommutativeRing
 
 
 def pow_str(a,b):
@@ -10,9 +10,9 @@ def pow_str(a,b):
     else:
         return f"({a})"
 
-class MyLocalizationElement(CommutativeAlgebraElement):
+class MyLocalizationElement(CommutativeRingElement):
     def __init__(self,parent,*x):
-        CommutativeAlgebraElement.__init__(self,parent)
+        CommutativeRingElement.__init__(self,parent)
         if len(x)==1:
             x = x[0]
             if isinstance(x, MyLocalizationElement):
@@ -25,11 +25,14 @@ class MyLocalizationElement(CommutativeAlgebraElement):
                 raise ValueError    
         else:
             num, powers = x
-    
-        self._num = num
+
+        try:
+            self._num = self.parent()._ambient(num)
+        except TypeError:
+            self._num = self.parent()._ambient(num.lift())
         self._powers = powers
         
-    def __repr__(self):
+    def _repr_(self):
         r"""
 
 
@@ -56,7 +59,36 @@ class MyLocalizationElement(CommutativeAlgebraElement):
 
     def _get_common_den(self,other):
         return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
+
+    def numerator(self):
+        r"""
+
+        EXAMPLES:
+
+            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R(4).numerator()
+            4
+            sage: R(4,[2,3]).numerator()
+            4
+
+        """
+        return self._num
+
+    def denominator(self):
+        r"""
+
+        EXAMPLES:
+
+            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R(4).denominator()
+            1
+            sage: R(4,[2,1]).denominator()
+            12
         
+        """
+        return prod(self.parent()._units[i]**self._powers[i]
+                    for i in range(self.parent().ngens()))
+    
     def _add_(self,other):
         r"""
 
@@ -123,9 +155,34 @@ class MyLocalizationElement(CommutativeAlgebraElement):
     def _lmul_(self,a):
         res_num = self._num * a
         return self.parent()(res_num, self._powers)
+
+    def __eq__(self,other):
+        r"""
+
+        EXAMPLES:
+
+            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R(2) == R(4,[1,0])
+            True
+            sage: R(2) == R(6,[1,0])
+            False
+
+            sage: A.<x,y> = QQ[] # 2 variables because no lift() in univariate
+            sage: AA.<xx,yy> = A.quotient(x^2)
+            sage: L = MyLocalization(AA,[xx])
+            sage: L(1) == L(0)
+            True
+            sage: L(x) == L(0)
+            True
+            sage: L(y) == L(0)
+            True
+        
+        """
+        diff = self.numerator()*other.denominator() - self.denominator()*other.numerator()
+        return diff in self.parent()._ideal
         
 
-class MyLocalization(CommutativeAlgebra):
+class MyLocalization(CommutativeRing):
     r"""
 
 
@@ -185,13 +242,20 @@ class MyLocalization(CommutativeAlgebra):
         self._ideal = J
         self._base = base
         self._units = units
-        CommutativeAlgebra.__init__(self,base)
+        CommutativeRing.__init__(self,base)
+        self.register_coercion(base)
+        self._assign_names('x') # Necessary for over() but why?
+
+    def _repr_(self):
+        return f"Localization of {self._base} at {self._units}"
 
     def ngens(self):
         return len(self._units)
 
     def gen(self,i):
         return self(self._ambient(1),[1 if j==i else 0 for j in range(self.ngens())])
+
+    
         
     # def _element_constructor_(self, *x):
     #     return self.element_class(self,*x)
@@ -203,6 +267,6 @@ class MyLocalization(CommutativeAlgebra):
     #     #     num, powers = x
     #     # return self.element_class(self, num, powers)
         
-
+    
     
     
