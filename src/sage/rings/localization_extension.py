@@ -167,7 +167,7 @@ class MyLocalizationElement(CommutativeRingElement):
             sage: R(2) == R(6,[1,0])
             False
 
-            sage: A.<x,y> = QQ[] # 2 variables because no lift() in univariate
+            sage: A.<x,y> = QQ[] # 2 variables because no saturate for univariate ideals
             sage: AA.<xx,yy> = A.quotient(x^2)
             sage: L = MyLocalization(AA,[xx])
             sage: L(1) == L(0)
@@ -255,18 +255,3 @@ class MyLocalization(CommutativeRing):
     def gen(self,i):
         return self(self._ambient(1),[1 if j==i else 0 for j in range(self.ngens())])
 
-    
-        
-    # def _element_constructor_(self, *x):
-    #     return self.element_class(self,*x)
-    #     # if isinstance(x, MyLocalizationElement):
-    #     #     num = x._num
-    #     #     powers = x._powers
-    #     # elif:
-    #     # else:
-    #     #     num, powers = x
-    #     # return self.element_class(self, num, powers)
-        
-    
-    
-    
