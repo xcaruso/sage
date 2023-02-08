@@ -1407,6 +1407,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         Ideal (3, 0) of Ring of integers modulo 9
     """
 
+    @cached_method
     def _cover_ideal(self):
         r"""
         Compute a covering ideal for this ideal
@@ -1469,8 +1470,8 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         else:
             other = [g.lift() for g in other.gens()]
         K = S.ideal(other)
-        sat = J.saturation(K)
-        return R.ideal([R(g) for g in sat.gens])
+        sat,n = J.saturation(K)
+        return (R.ideal([R(g) for g in sat.gens()]),n)
         
         
     

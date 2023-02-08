@@ -246,13 +246,13 @@ class MyLocalization(CommutativeRing):
     def __init__(self, base, units):
         A = base
         J = A.ideal(0)
-        try:
-            _ = J.saturation
-            self._has_equality_test = True
-            for u in units:
-                J, _ = J.saturation(u)
-        except AttributeError:
-            self._has_equality_test = False
+        # try:
+        _ = J.saturation
+        self._has_equality_test = True
+        for u in units:
+            J, _ = J.saturation(u)
+        # except AttributeError:
+        #     self._has_equality_test = False
 
         try:
             _ = A.zero()._floordiv_
