@@ -12,7 +12,7 @@ def pow_str(a,b):
         return f"({a})"
 
 class MyLocalizationElement(CommutativeRingElement):
-    def __init__(self,parent,*x):
+    def __init__(self, parent, *x, simplify=True):
         r"""
 
         EXAMPLES::
@@ -38,7 +38,7 @@ class MyLocalizationElement(CommutativeRingElement):
             0
 
         """
-        CommutativeRingElement.__init__(self,parent)
+        CommutativeRingElement.__init__(self, parent)
         if len(x)==1:
             x = x[0]
             if isinstance(x, MyLocalizationElement):
@@ -54,12 +54,12 @@ class MyLocalizationElement(CommutativeRingElement):
 
         if num == 0:
             powers = [0] * len(self.parent()._units)
-        elif self.parent()._has_simplify:
+        elif simplify and self.parent()._has_simplify:
             for i in range(len(powers)):
                 p = powers[i]
                 u = self.parent()._units[i]
                 while p > 0 and u.divides(num):
-                    num //= u
+                    num = num // u
                     p -= 1
                 powers[i] = p
         self._num = num
@@ -202,7 +202,7 @@ class MyLocalizationElement(CommutativeRingElement):
     
     def _lmul_(self,a):
         res_num = self._num * a
-        return self.parent()(res_num, self._powers)
+        return self.__class__(self.parent(),res_num, self._powers[:],simplify=True)
 
     def __eq__(self,other):
         r"""
@@ -266,6 +266,14 @@ class MyLocalization(CommutativeRing):
         sage: L._units
         [-y^2 + x]
 
+    Elements can be given a name for input purposes::
+
+        sage: L.<xinv> = MyLocalization(PP,[xb])
+        sage: xinv
+        1/((xb))
+        sage: xb*xinv
+        xb/((xb))
+
     """
 
     Element = MyLocalizationElement
@@ -273,13 +281,17 @@ class MyLocalization(CommutativeRing):
     def __init__(self, base, units, names="x"):
         A = base
         J = A.ideal(0)
-        try:
-            _ = J.saturation
+
+        if A.is_integral_domain():
             self._has_equality_test = True
-            for u in units:
-                J, _ = J.saturation(u)
-        except AttributeError:
-            self._has_equality_test = False
+        else:
+            try:
+                _ = J.saturation
+                self._has_equality_test = True
+                for u in units:
+                    J, _ = J.saturation(u)
+            except AttributeError:
+                self._has_equality_test = False
 
         try:
             _ = A.zero()._floordiv_
