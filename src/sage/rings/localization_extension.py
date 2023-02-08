@@ -30,6 +30,7 @@ class MyLocalizationElement(CommutativeRingElement):
             self._num = self.parent()._ambient(num)
         except TypeError:
             self._num = self.parent()._ambient(num.lift())
+        self._num = self.parent()._ideal.reduce(self._num)
         self._powers = powers
         
     def _repr_(self):
