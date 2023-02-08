@@ -11,6 +11,22 @@ def pow_str(a,b):
         return f"({a})"
 
 class MyLocalizationElement(CommutativeRingElement):
+    r"""
+
+    EXAMPLES:
+
+    Example with simplification
+    
+        sage: L = MyLocalization(ZZ,[2,3])
+        sage: L(4)
+        4
+        sage: L(4,[1,0])
+        2
+        sage: L(1,[2,0]) + L(3,[2,0])
+        1
+    
+    """
+    
     def __init__(self,parent,*x):
         CommutativeRingElement.__init__(self,parent)
         if len(x)==1:
@@ -26,11 +42,15 @@ class MyLocalizationElement(CommutativeRingElement):
         else:
             num, powers = x
 
-        try:
-            self._num = self.parent()._ambient(num)
-        except TypeError:
-            self._num = self.parent()._ambient(num.lift())
-        self._num = self.parent()._ideal.reduce(self._num)
+        if self.parent()._has_simplify:
+            for i in range(len(powers)):
+                p = powers[i]
+                u = self.parent()._units[i]
+                while p > 0 and u.divides(num):
+                    num //= u
+                    p -= 1
+                powers[i] = p
+        self._num = num
         self._powers = powers
         
     def _repr_(self):
@@ -179,6 +199,8 @@ class MyLocalizationElement(CommutativeRingElement):
             True
         
         """
+        if not self.parent()._has_equality_test:
+            raise TypeError("no equality test in this localization")
         diff = self.numerator()*other.denominator() - self.denominator()*other.numerator()
         return diff in self.parent()._ideal
         
@@ -192,21 +214,19 @@ class MyLocalization(CommutativeRing):
     Integral case
     
         sage: R = MyLocalization(ZZ,[2,3])
-        sage: R._ambient
+        sage: R._base
         Integer Ring
         sage: R._ideal
         Principal ideal (0) of Integer Ring
         sage: R._units
         [2, 3]
 
-    Localization by a divisor of 0
+    Localization by a divisor of 0 (not working until saturation in ideals of quotients is implemented)
     
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
         sage: L = MyLocalization(PP,[xb-yb])
-        sage: L._ambient
-        Multivariate Polynomial Ring in x, y over Rational Field
-        sage: L._ideal
+        sage: L._ideal # incorrect
         Ideal (x + y) of Multivariate Polynomial Ring in x, y over Rational Field
         sage: L._units
         [x - y]
@@ -214,9 +234,7 @@ class MyLocalization(CommutativeRing):
     Localization by a non-divisor of 0
 
         sage: L = MyLocalization(PP,[xb-yb^2])
-        sage: L._ambient
-        Multivariate Polynomial Ring in x, y over Rational Field
-        sage: L._ideal
+        sage: L._ideal # incorrect
         Ideal (x^2 - y^2) of Multivariate Polynomial Ring in x, y over Rational Field
         sage: L._units
         [-y^2 + x]
@@ -226,26 +244,30 @@ class MyLocalization(CommutativeRing):
     Element = MyLocalizationElement
 
     def __init__(self, base, units):
-        from sage.rings.quotient_ring import QuotientRing_generic
-        if base in IntegralDomains():
-            A = base
-            J = A.ideal(0)
-        elif isinstance(base, QuotientRing_generic):
-            I = base.defining_ideal()
-            A = base.ambient()
-            J = I
-            units = [u.lift() for u in units]
+        A = base
+        J = A.ideal(0)
+        try:
+            _ = J.saturation
+            self._has_equality_test = True
             for u in units:
                 J, _ = J.saturation(u)
-        else:
-            raise NotImplementedError("..")
-        self._ambient = A
+        except AttributeError:
+            self._has_equality_test = False
+
+        try:
+            _ = A.zero()._floordiv_
+            self._has_simplify = True
+        except AttributeError:
+            self._has_simplify = False
+    
         self._ideal = J
         self._base = base
         self._units = units
         CommutativeRing.__init__(self,base)
         self.register_coercion(base)
         self._assign_names('x') # Necessary for over() but why?
+
+        
 
     def _repr_(self):
         return f"Localization of {self._base} at {self._units}"
@@ -254,5 +276,6 @@ class MyLocalization(CommutativeRing):
         return len(self._units)
 
     def gen(self,i):
-        return self(self._ambient(1),[1 if j==i else 0 for j in range(self.ngens())])
+        return self(self._base(1),[1 if j==i else 0 for j in range(self.ngens())])
 
+        
