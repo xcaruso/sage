@@ -12,23 +12,32 @@ def pow_str(a,b):
         return f"({a})"
 
 class MyLocalizationElement(CommutativeRingElement):
-    r"""
-
-    EXAMPLES:
-
-    Example with simplification
-    
-        sage: L = MyLocalization(ZZ,[2,3])
-        sage: L(4)
-        4
-        sage: L(4,[1,0])
-        2
-        sage: L(1,[2,0]) + L(3,[2,0])
-        1
-    
-    """
-    
     def __init__(self,parent,*x):
+        r"""
+
+        EXAMPLES::
+
+        Example with simplification::
+
+            sage: L = MyLocalization(ZZ,[2,3])
+            sage: L(4)
+            4
+            sage: L(4,[1,0])
+            2
+            sage: L(1,[2,0]) + L(3,[2,0])
+            1
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xb,yb> = P.quotient(x^2*y)
+            sage: L = MyLocalization(PP,[xb])
+            sage: L._has_simplify
+            False
+            sage: L(xb,[1])
+            xb/((xb))
+            sage: L(0,[18])
+            0
+
+        """
         CommutativeRingElement.__init__(self,parent)
         if len(x)==1:
             x = x[0]
@@ -43,7 +52,9 @@ class MyLocalizationElement(CommutativeRingElement):
         else:
             num, powers = x
 
-        if self.parent()._has_simplify:
+        if num == 0:
+            powers = [0] * len(self.parent()._units)
+        elif self.parent()._has_simplify:
             for i in range(len(powers)):
                 p = powers[i]
                 u = self.parent()._units[i]
@@ -58,7 +69,7 @@ class MyLocalizationElement(CommutativeRingElement):
         r"""
 
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4,[0,0])
@@ -82,10 +93,25 @@ class MyLocalizationElement(CommutativeRingElement):
     def _get_common_den(self,other):
         return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
 
+    def __hash__(self):
+        r"""
+
+        EXAMPLES::
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xb,yb> = P.quotient(x^2*y)
+            sage: L = MyLocalization(PP,[xb])
+            sage: elt = L(xb*yb,[4]) 
+            sage: hash(elt) # random
+            211140964612250627
+
+        """
+        return hash((self._num,tuple(self._powers)))
+
     def numerator(self):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4).numerator()
@@ -99,7 +125,7 @@ class MyLocalizationElement(CommutativeRingElement):
     def denominator(self):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4).denominator()
@@ -114,7 +140,7 @@ class MyLocalizationElement(CommutativeRingElement):
     def _add_(self,other):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4,[0,0]) + R(6,[0,0])
@@ -136,7 +162,7 @@ class MyLocalizationElement(CommutativeRingElement):
     def _sub_(self,other):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4,[0,0]) - R(6,[0,0])
@@ -158,7 +184,7 @@ class MyLocalizationElement(CommutativeRingElement):
     def _mul_(self,other):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(4,[0,0]) * R(6,[0,0])
@@ -181,7 +207,7 @@ class MyLocalizationElement(CommutativeRingElement):
     def __eq__(self,other):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R = MyLocalization(ZZ,[2,3])
             sage: R(2) == R(4,[1,0])
@@ -212,7 +238,7 @@ class MyLocalization(CommutativeRing):
 
     EXAMPLES:
 
-    Integral case
+    Integral case::
     
         sage: R = MyLocalization(ZZ,[2,3])
         sage: R._base
@@ -222,7 +248,7 @@ class MyLocalization(CommutativeRing):
         sage: R._units
         [2, 3]
 
-    Localization by a divisor of 0 (not working until saturation in ideals of quotients is implemented)
+    Localization by a divisor of 0 (not working until saturation in ideals of quotients is implemented)::
     
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
@@ -232,7 +258,7 @@ class MyLocalization(CommutativeRing):
         sage: L._units
         [x - y]
 
-    Localization by a non-divisor of 0
+    Localization by a non-divisor of 0::
 
         sage: L = MyLocalization(PP,[xb-yb^2])
         sage: L._ideal # incorrect
@@ -244,7 +270,7 @@ class MyLocalization(CommutativeRing):
 
     Element = MyLocalizationElement
 
-    def __init__(self, base, units):
+    def __init__(self, base, units, names="x"):
         A = base
         J = A.ideal(0)
         try:
@@ -300,7 +326,7 @@ class MyLocalizationIdeal_generic(Ideal_generic):
     def base_ideal(self):
         r"""
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
@@ -317,20 +343,36 @@ class MyLocalizationIdeal_generic(Ideal_generic):
         S = R.base()
         gens_S = [S(g.numerator()) for g in self.gens()]
         I_S = S.ideal(gens_S)
-        if R._has_equality_test:
-            for u in R._units:
-                I_S = I_S.saturation(u)
+        for u in R._units:
+            I_S,_ = I_S.saturation(u)
         return I_S
+
+    def _contains_(self,elt):
+        r"""
+
+        EXAMPLES::
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xb,yb> = P.quotient(x^2*y)
+            sage: L = MyLocalization(PP,[xb])
+            sage: I = L.ideal(L(yb,[2]))
+            sage: L(xb*yb,[4]) in I
+            True
+
+        """
+        return elt.numerator() in self.base_ideal()
+
     
-class MyLocalizationExtension(RingExtension):
-    def __init__(self,base,units):
-        if isinstance(base, QuotientRing_generic):
-            R = base.cover_ring()
-            I = base.defining_ideal()
-            # todo...
-        elif isinstance(base, MyLocalization):
-            R = base.ambient_ring()
-            U = base.units()
-            # todo...
-        else:
-            backend = MyLocalization(base,units)
+    
+# class MyLocalizationExtension(RingExtension):
+#     def __init__(self,base,units):
+#         if isinstance(base, QuotientRing_generic):
+#             R = base.cover_ring()
+#             I = base.defining_ideal()
+#             # todo...
+#         elif isinstance(base, MyLocalization):
+#             R = base.ambient_ring()
+#             U = base.units()
+#             # todo...
+#         else:
+#             backend = MyLocalization(base,units)
