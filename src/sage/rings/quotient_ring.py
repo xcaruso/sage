@@ -1407,6 +1407,22 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         Ideal (3, 0) of Ring of integers modulo 9
     """
 
+    @cached_method
+    def _cover_ideal(self):
+        r"""
+        Compute a covering ideal for this ideal
+
+        If this ideal is J in the ring R/I, the covering ideal is I+JR in R.
+        """
+        R = self.ring()
+        if hasattr(R, 'defining_ideal'):
+            Igens = list(R.defining_ideal().gens())
+        else:
+            Igens = [R.modulus()]
+        Igens += [g.lift() for g in self.gens()]
+        J = R.cover_ring().ideal(Igens)
+        return J
+    
     def _contains_(self, other):
         r"""
         Check whether this ideal contains the given element.
@@ -1436,15 +1452,29 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
             True
         """
         R = self.ring()
+        J = self._cover_ideal()
         assert other in R
-        if hasattr(R, 'defining_ideal'):
-            Igens = list(R.defining_ideal().gens())
-        else:
-            Igens = [R.modulus()]
-        Igens += [g.lift() for g in self.gens()]
-        J = R.cover_ring().ideal(Igens)
         return other.lift() in J
 
+    def saturation(self, other):
+        r"""
+        Compute the saturation of this ideal by another
+
+        This requires that the ideal class of the ambient ring implement saturation
+        """
+        R = self.ring()
+        J = self._cover_ideal()
+        S = self.cover_ring()
+        if other in R:
+            other = [other.lift()]
+        else:
+            other = [g.lift() for g in other.gens()]
+        K = S.ideal(other)
+        sat,n = J.saturation(K)
+        return (R.ideal([R(g) for g in sat.gens()]),n)
+        
+        
+    
 class QuotientRingIdeal_principal(ideal.Ideal_principal, QuotientRingIdeal_generic):
     r"""
     Specialized class for principal quotient-ring ideals.

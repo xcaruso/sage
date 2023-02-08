@@ -5551,3 +5551,15 @@ class MPolynomialIdeal_quotient(MPolynomialIdeal):
                 return not (contained and contains)
             else:  # remaining case <
                 return contained and not contains
+
+    def saturation(self, other):
+        Q = self.ring()
+        R = Q.cover_ring()
+        J = R.ideal(Q.defining_ideal().gens() + [g.lift() for g in self.gens()])
+        if other in Q:
+            K = R.ideal([other.lift()])
+        else:
+            K = R.ideal([g.lift() for g in other.gens()])
+        sat,n = J.saturation(K)
+        return (Q.ideal([Q(s) for s in sat.gens()]),n)
+        
