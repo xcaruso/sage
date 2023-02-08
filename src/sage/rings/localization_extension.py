@@ -1,4 +1,5 @@
 from sage.rings.ring import CommutativeRing, CommutativeRing
+from sage.rings.ideal import Ideal_generic
 
 
 def pow_str(a,b):
@@ -246,13 +247,13 @@ class MyLocalization(CommutativeRing):
     def __init__(self, base, units):
         A = base
         J = A.ideal(0)
-        # try:
-        _ = J.saturation
-        self._has_equality_test = True
-        for u in units:
-            J, _ = J.saturation(u)
-        # except AttributeError:
-        #     self._has_equality_test = False
+        try:
+            _ = J.saturation
+            self._has_equality_test = True
+            for u in units:
+                J, _ = J.saturation(u)
+        except AttributeError:
+            self._has_equality_test = False
 
         try:
             _ = A.zero()._floordiv_
@@ -278,4 +279,9 @@ class MyLocalization(CommutativeRing):
     def gen(self,i):
         return self(self._base(1),[1 if j==i else 0 for j in range(self.ngens())])
 
-        
+    def _ideal_class(self, num_gens):
+        return MyLocalizationIdeal_generic
+
+class MyLocalizationIdeal_generic(Ideal_generic):
+    r"""
+    """
