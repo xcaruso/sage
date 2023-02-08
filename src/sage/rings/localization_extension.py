@@ -282,6 +282,16 @@ class MyLocalization(CommutativeRing):
     def _ideal_class_(self, num_gens):
         return MyLocalizationIdeal_generic
 
+    def base_ring(self):
+        return self._base
+
+    def units(self):
+        return self._units
+
+    def cover_ideal(self):
+        return self._ideal
+        
+
 class MyLocalizationIdeal_generic(Ideal_generic):
     r"""
     """
