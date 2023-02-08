@@ -312,3 +312,15 @@ class MyLocalizationIdeal_generic(Ideal_generic):
                 I_S = I_S.saturation(u)
         return I_S
     
+class MyLocalizationExtension(RingExtension):
+    def __init__(self,base,units):
+        if isinstance(base, QuotientRing_generic):
+            R = base.cover_ring()
+            I = base.defining_ideal()
+            # todo...
+        elif isinstance(base, MyLocalization):
+            R = base.ambient_ring()
+            U = base.units()
+            # todo...
+        else:
+            backend = MyLocalization(base,units)
