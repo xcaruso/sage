@@ -279,9 +279,36 @@ class MyLocalization(CommutativeRing):
     def gen(self,i):
         return self(self._base(1),[1 if j==i else 0 for j in range(self.ngens())])
 
-    def _ideal_class(self, num_gens):
+    def _ideal_class_(self, num_gens):
         return MyLocalizationIdeal_generic
 
 class MyLocalizationIdeal_generic(Ideal_generic):
     r"""
     """
+
+    @cached_method
+    def base_ideal(self):
+        r"""
+
+        EXAMPLES:
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xb,yb> = P.quotient(x^2*y)
+            sage: L = MyLocalization(PP,[xb])
+            sage: I = L.ideal(L(yb,[2]))
+            sage: I
+            Ideal (yb/((xb)^2)) of Localization of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) at [xb]
+            sage: I.base_ideal()
+            (Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y),
+             0)
+
+        """
+        R = self.ring()
+        S = R.base()
+        gens_S = [S(g.numerator()) for g in self.gens()]
+        I_S = S.ideal(gens_S)
+        if R._has_equality_test:
+            for u in R._units:
+                I_S = I_S.saturation(u)
+        return I_S
+    
