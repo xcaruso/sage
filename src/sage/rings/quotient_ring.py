@@ -1408,7 +1408,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
     """
 
     @cached_method
-    def _cover_ideal(self):
+    def cover_ideal(self):
         r"""
         Compute a covering ideal for this ideal
 
@@ -1452,7 +1452,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
             True
         """
         R = self.ring()
-        J = self._cover_ideal()
+        J = self.cover_ideal()
         assert other in R
         return other.lift() in J
 
@@ -1463,15 +1463,19 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         This requires that the ideal class of the ambient ring implement saturation
         """
         R = self.ring()
-        J = self._cover_ideal()
+        J = self.cover_ideal()
         S = R.cover_ring()
-        if other in R:
-            other = [other.lift()]
+        if isinstance(other, ideal.Ideal_generic):
+            if other.ring() is not R :
+                raise TypeError
+            K = other.cover_ideal()
         else:
-            other = [g.lift() for g in other.gens()]
-        K = S.ideal(other)
-        sat,n = J.saturation(K)
-        return (R.ideal([R(g) for g in sat.gens()]),n)
+            if not isinstance(other, (list,tuple)):
+                other = [other]
+            other = [R(o).lift() for o in other]
+            K = S.ideal(other) 
+        sat, n = J.saturation(K)
+        return R.ideal([R(g) for g in sat.gens()]), n
 
         
         

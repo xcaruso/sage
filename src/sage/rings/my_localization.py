@@ -1,8 +1,10 @@
 from sage.rings.ring import CommutativeRing, CommutativeRing
 from sage.rings.ring_extension import RingExtension
 from sage.rings.ideal import Ideal_generic
+from sage.categories.integral_domains import IntegralDomains
 
-from sage.structure.element import Element
+from sage.structure.element import Element, coerce_binop
+
 
 def pow_str(a,b):
     r"""
@@ -54,7 +56,7 @@ class MyLocalizationElement(Element):
         else:
             num, powers = x
 
-        if num == 0:
+        if num.is_zero():
             powers = [0] * len(self.parent()._units)
         elif simplify and self.parent()._has_simplify:
             for i in range(len(powers)):
@@ -99,7 +101,7 @@ class MyLocalizationElement(Element):
         R = self.parent()
         S = R.numerator_ring()
         for i in range(S.ngens()):
-            res = re.sub(f"\\b{S.gen(i)}\\b", R.variable_names()[i], res)
+            res = re.sub(f"\\b{S.variable_names()[i]}\\b", R.variable_names()[i], res)
         return res
 
     def _get_common_den(self,other):
@@ -288,6 +290,7 @@ class MyLocalizationElement(Element):
             res_num *= units[i]**self._powers[i]
         return self.parent()(res_num, res_powers)
             
+    @coerce_binop
     def __eq__(self,other):
         r"""
 
@@ -367,14 +370,14 @@ class MyLocalization(CommutativeRing):
         J = base.ideal(0)
 
         try:
-            if A.is_integral_domain():
+            if A in IntegralDomains():
                 self._has_equality_test = True
             else:
                 _ = J.saturation
                 self._has_equality_test = True
                 for u in units:
                     J, _ = J.saturation(u)
-        except (AttributeError, NotImplementedError):
+        except (AttributeError, NotImplementedError) as e:
             self._has_equality_test = False
 
         try:
@@ -479,10 +482,19 @@ class MyLocalizationIdeal_generic(Ideal_generic):
     def saturation(self,other):
         R = self.ring()
         S = R.numerator_ring()
-        I_S = self.numerator_ideal()
-        J_S = S.ideal([g._num for g in other.gens()])
-        K_S, n = I_S.saturation(J_S)
-        return (R.ideal([R(g) for g in K_S.gens()]),n)
+        I = self.numerator_ideal()
+        if isinstance(other, Ideal_generic):
+            if other.ring() is not R :
+                raise TypeError
+            K = other.numerator_ideal()
+        else:
+            if not isinstance(other, (list,tuple)):
+                other = [other]
+            other = [R(o).numerator() for o in other]
+            K = S.ideal(other) 
+
+        J, n = I.saturation(K)
+        return R.ideal([R(g) for g in J.gens()]), n
     
     
 # class MyLocalizationExtension(CommutativeRing):
@@ -502,9 +514,17 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 #             backend = MyLocalization(base,units)
 
 
-P = QQ[("x","y")]
-P.inject_variables()
-PP = P.quotient(x*y, names=("xb","yb"))
-PP.inject_variables()
-P2 = MyLocalization(PP,[xb], names=("xl","yl","u"))
-P2.inject_variables()
+# P = QQ[("x","y")]
+# P.inject_variables()
+# PP = P.quotient(x*y, names=("xb","yb"))
+# PP.inject_variables()
+# P2 = MyLocalization(PP,[xb], names=("xl","yl","u"))
+# P2.inject_variables()
+
+###
+
+Z6 = Integers(6)
+L = MyLocalization(Z6,[ZZ(3)])
+LL = MyLocalization(L,[ZZ(2)])
+
+#print(L.is_zero())

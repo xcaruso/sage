@@ -1693,9 +1693,13 @@ class Ideal_pid(Ideal_principal):
         first = True
         res = self.gen()
         g = self.gen().gcd(other.gen())
+        n = 0
+        if g.is_unit():
+            return self, n
         while g.divides(res):
             res //= g
-        return self.ring().ideal(res)
+            n += 1
+        return self.ring().ideal(res), n
             
 
 class Ideal_fractional(Ideal_generic):
