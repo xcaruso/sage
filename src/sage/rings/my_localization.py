@@ -91,7 +91,7 @@ class MyLocalizationElement(Element):
             den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
             for i in pos[1:] :
                 den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-            res = f"{self._num}/({den})"
+            res = f"({self._num})/({den})"
         else:
             res = f"{self._num}"
         import re
@@ -317,7 +317,14 @@ class MyLocalizationElement(Element):
             raise TypeError("no equality test in this localization")
         diff = self.numerator()*other.denominator() - self.denominator()*other.numerator()
         return diff in self.parent()._ideal
-        
+
+    def _rational_(self):
+        # Only if base ring is ZZ
+        if not self.parent()._numring == ZZ:
+            raise ValueError("not a rational")
+        else:
+            return self.numerator()/self.denominator()
+
 
 class MyLocalization(CommutativeRing):
     r"""
@@ -365,13 +372,19 @@ class MyLocalization(CommutativeRing):
 
     Element = MyLocalizationElement
 
-    def __init__(self, base, units, names=None, inverse_names=None):
+    def __init__(self, base, units, names=None, inverse_names=None, normalize=True, category=None):
         A = base
         J = base.ideal(0)
+        self._is_ideal_domain = False
 
         try:
             if A in IntegralDomains():
                 self._has_equality_test = True
+                self._is_integral_domain = True
+                if category is None:
+                    category = IntegralDomains()
+                else:
+                    category = category.join([IntegralDomains()])
             else:
                 _ = J.saturation
                 self._has_equality_test = True
@@ -389,9 +402,7 @@ class MyLocalization(CommutativeRing):
         self._ideal = J
         self._numring = base
         self._units = units
-        CommutativeRing.__init__(self,base.base_ring())
-        self.register_coercion(base)
-
+        
         if bool(inverse_names) and bool(names):
             raise ValueError("both names and inverse_names are provided")
 
@@ -409,6 +420,10 @@ class MyLocalization(CommutativeRing):
                       + tuple(self(base(1),
                                    [1 if j==i else 0 for j in range(len(units))])
                               for i in range(len(units))))
+
+        CommutativeRing.__init__(self,base.base_ring(), names=names, normalize=normalize, category=category)
+        self.register_coercion(base)
+
 
     def _repr_(self):
         return f"Localization of {self._numring} at {self._units}"
@@ -433,7 +448,21 @@ class MyLocalization(CommutativeRing):
 
     def numerator_ring(self):
         return self._numring
+
+    def is_integral_domain(self):
+        if self in IntegralDomains():
+            return True
+        return self._ideal.is_prime()
+
+    @cached_method
+    def fraction_field(self):
+        if not self.is_integral_domain():
+            raise TypeError
+        field = self._numring.quotient(self._ideal).fraction_field()
+        field.register_coercion(self)
+        return field
         
+    
 
 class MyLocalizationIdeal_generic(Ideal_generic):
     r"""
