@@ -202,8 +202,80 @@ class MyLocalizationElement(CommutativeRingElement):
     
     def _lmul_(self,a):
         res_num = self._num * a
-        return self.__class__(self.parent(),res_num, self._powers[:],simplify=True)
+        return self.parent()(res_num, self._powers[:])
 
+    def is_unit(self):
+        r"""
+
+        EXAMPLES::
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xx,yy> = P.quotient(x*y)
+            sage: L = MyLocalization(PP,[xx])
+            sage: L(x).is_unit()
+            True
+            sage: L(y).is_unit()
+            False
+        
+            sage: PP.<xx,yy> = P.quotient(x^2)
+            sage: L = MyLocalization(PP,[xx])
+            sage: L(x).is_unit()
+            True
+            sage: L(y).is_unit()
+            True
+
+        """
+        I = self.parent().ideal(self)
+        I_base = I.base_ideal()
+        return I_base.is_one()
+
+    def inverse_of_unit(self):
+        r"""
+
+        EXAMPLES::
+
+            sage: L.<a,b> = MyLocalization(ZZ,[2,3])
+            sage: L(1).inverse_of_unit()
+            1
+            sage: L(-1).inverse_of_unit()
+            1
+            sage: L(2).inverse_of_unit()
+            1/((2))
+            sage: L(-3).inverse_of_unit()
+            -1/((3))
+            sage: a.inverse_of_unit()
+            2
+            sage: L(5).inverse_of_unit()
+            Traceback (most recent call last):
+            ...
+            NotImplementedError:
+
+        It is not currently possible to compute the inverse for all units.
+        ::
+        
+            sage: L(6).inverse_of_unit()
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: 
+
+        """
+        units = self.parent()._units
+        for i in [1,-1]:
+            num = i*self._num
+            if num == 1:
+                res_num = num
+                res_powers = [0]*len(units)
+                break
+            elif num in units:
+                res_num = i
+                res_powers = [1 if units[i] == num else 0 for i in range(len(units))]
+                break
+        else:
+            raise NotImplementedError
+        for i in range(len(units)):
+            res_num *= units[i]**self._powers[i]
+        return self.parent()(res_num, res_powers)
+            
     def __eq__(self,other):
         r"""
 
@@ -282,16 +354,16 @@ class MyLocalization(CommutativeRing):
         A = base
         J = A.ideal(0)
 
-        if A.is_integral_domain():
-            self._has_equality_test = True
-        else:
-            try:
+        try:
+            if A.is_integral_domain():
+                self._has_equality_test = True
+            else:
                 _ = J.saturation
                 self._has_equality_test = True
                 for u in units:
                     J, _ = J.saturation(u)
-            except AttributeError:
-                self._has_equality_test = False
+        except (AttributeError, NotImplementedError):
+            self._has_equality_test = False
 
         try:
             _ = A.zero()._floordiv_
@@ -374,6 +446,13 @@ class MyLocalizationIdeal_generic(Ideal_generic):
         """
         return elt.numerator() in self.base_ideal()
 
+    def saturation(self,other):
+        R = self.ring()
+        S = R.base()
+        I_S = self.base_ideal()
+        J_S = S.ideal([g._num for g in other.gens()])
+        K_S, n = I_S.saturation(J_S)
+        return (R.ideal([R(g) for g in K_S.gens()]),n)
     
     
 # class MyLocalizationExtension(RingExtension):

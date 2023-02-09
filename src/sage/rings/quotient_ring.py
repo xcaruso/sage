@@ -1464,7 +1464,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         """
         R = self.ring()
         J = self._cover_ideal()
-        S = self.cover_ring()
+        S = R.cover_ring()
         if other in R:
             other = [other.lift()]
         else:
