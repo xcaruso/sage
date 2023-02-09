@@ -1472,6 +1472,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         K = S.ideal(other)
         sat,n = J.saturation(K)
         return (R.ideal([R(g) for g in sat.gens()]),n)
+
         
         
     

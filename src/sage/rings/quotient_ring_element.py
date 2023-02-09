@@ -669,7 +669,7 @@ class QuotientRingElement(RingElement):
         # A containment test is not implemented for univariate polynomial
         # ideals. There are cases in which one would not like to add
         # elements of different degrees. The whole quotient stuff relies
-        # in I.reduce(x) returning a normal form of x with respect to I.
+        # on I.reduce(x) returning a normal form of x with respect to I.
         # Hence, we will not use more than that.
 
         # Since we have to compute normal forms anyway, it makes sense
@@ -678,7 +678,10 @@ class QuotientRingElement(RingElement):
             # Use a shortpath, so that we avoid expensive reductions
             return rich_to_bool(op, 0)
         I = self.parent().defining_ideal()
-        return richcmp(I.reduce(self.__rep), I.reduce(other.__rep), op)
+        try:
+            return (self.__rep - other.__rep) in I
+        except NotImplementedError:
+            return richcmp(I.reduce(self.__rep), I.reduce(other.__rep), op)
 
     def lt(self):
         """

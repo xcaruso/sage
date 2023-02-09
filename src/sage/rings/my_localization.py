@@ -147,7 +147,7 @@ class MyLocalizationElement(Element):
         
         """
         return prod(self.parent()._units[i]**self._powers[i]
-                    for i in range(self.parent().ngens()))
+                    for i in range(len(self.parent()._units)))
     
     def _add_(self,other):
         r"""
