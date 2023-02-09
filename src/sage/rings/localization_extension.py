@@ -99,7 +99,7 @@ class MyLocalizationElement(Element):
         R = self.parent()
         S = R.numerator_ring()
         for i in range(S.ngens()):
-            res = re.sub(f"\\b{S.gen(i)}\\b", str(R.variable_names()[i]), res)
+            res = re.sub(f"\\b{S.gen(i)}\\b", R.variable_names()[i], res)
         return res
 
     def _get_common_den(self,other):
