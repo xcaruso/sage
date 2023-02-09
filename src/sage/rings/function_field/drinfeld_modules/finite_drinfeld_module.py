@@ -22,10 +22,13 @@ AUTHORS:
 # *****************************************************************************
 
 from sage.matrix.constructor import Matrix
+from sage.matrix.matrix_space import MatrixSpace
+from sage.matrix.special import companion_matrix
 from sage.modules.free_module_element import vector
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
-
+from sage.functions.other import ceil, sqrt
+from sage.all import prod
 
 class FiniteDrinfeldModule(DrinfeldModule):
     r"""
@@ -50,7 +53,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sage: K.<z6> = Fq.extension(2)
         sage: phi = DrinfeldModule(A, [z6, 0, 5])
         sage: phi
-        Drinfeld module defined by T |--> 5*t^2 + z6
+        Drinfeld module defined by T |--> 5*t^2 + z6 over Finite Field in z6 of size 7^6 over its base
 
     ::
 
@@ -77,8 +80,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         sage: frobenius_endomorphism = phi.frobenius_endomorphism()
         sage: frobenius_endomorphism
-        Endomorphism of Drinfeld module defined by T |--> 5*t^2 + z6
-          Defn: t^2
+        Drinfeld Module morphism:
+          From (gen): 5*t^2 + z6
+          To (gen):   5*t^2 + z6
+          Defn:       t^2
 
     Its characteristic polynomial can be computed::
 
@@ -89,7 +94,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sage: chi(frob_pol, phi(T))
         0
 
-    as well as its trace and norm::
+    This makes it possible to compute the Frobenius trace and norm::
 
         sage: phi.frobenius_trace()
         6*T + 5*z3^2 + 5*z3 + 6
@@ -98,7 +103,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sage: phi.frobenius_norm()
         2*T^2 + (z3^2 + z3 + 4)*T + 2*z3
 
-    We can decide if a Drinfeld module is ordinary or supersingular::
+    And to decide if a Drinfeld module is ordinary or supersingular::
 
         sage: phi.is_ordinary()
         True
@@ -127,13 +132,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         - ``function_ring`` -- a univariate polynomial ring whose base
           is a finite field
-
         - ``gen`` -- the generator of the Drinfeld module as a list of
           coefficients or an Ore polynomial
-
         - ``name`` (default: `'t'`) -- the name of the Ore polynomial
           ring gen
-
         - ``latexname`` (default: ``None``) -- the LaTeX name of the Drinfeld
           module
 
@@ -149,9 +151,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi._gen == ore_polring(gen)
             True
         """
+
         # NOTE: There used to be no __init__ here (which was fine). I
         # added one to ensure that FiniteDrinfeldModule would always
         # have _frobenius_norm and _frobenius_trace attributes.
+
         super().__init__(gen, category, latexname)
         self._frobenius_norm = None
         self._frobenius_trace = None
@@ -165,6 +169,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         *Frobenius endomorphism* is defined as the endomorphism whose
         defining Ore polynomial is `t^q`.
 
+        OUTPUT: a Drinfeld module morphism
+
         EXAMPLES::
 
             sage: Fq = GF(343)
@@ -172,11 +178,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z6> = Fq.extension(2)
             sage: phi = DrinfeldModule(A, [1, 0, z6])
             sage: phi.frobenius_endomorphism()
-            Endomorphism of Drinfeld module defined by T |--> z6*t^2 + 1
-              Defn: t^2
-
-       TESTS::
-
+            Drinfeld Module morphism:
+              From (gen): z6*t^2 + 1
+              To (gen):   z6*t^2 + 1
+              Defn:       t^2
             sage: from sage.rings.function_field.drinfeld_modules.morphism import DrinfeldModuleMorphism
             sage: isinstance(phi.frobenius_endomorphism(), DrinfeldModuleMorphism)
             True
@@ -212,9 +217,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Note that the *Frobenius trace* is defined as `A(T)` and the
         *Frobenius norm* is defined as `B(T)`.
 
-        INPUT:
+        INPUT: (default: ``'T'``) the name of the second variable
 
-        - ``var`` (default: ``'X'``) -- the name of the second variable
+        OUTPUT: a univariate polynomial with coefficients in the
+        function ring
 
         EXAMPLES::
 
@@ -267,6 +273,165 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # return -chi(A.gen(), S.gen())
         return S([self.frobenius_norm(), -self.frobenius_trace(), 1])
 
+    def frobenius_charpoly_gekeler(self, var = 'X'):
+        r"""
+        Return the characteristic polynomial of the Frobenius
+        endomorphism for any rank if the minimal polynomial is
+        equal to the characteristic polynomial. Currently only
+        works for Drinfeld modules defined over Fq[T].
+        
+        See [Gek2008]_ for the rank two version
+        of this algorithm.
+
+        INPUT: (default: ``'X'``) the name of the second variable
+
+        OUTPUT: a univariate polynomial with coefficients in the
+                function ring
+
+        EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(6)
+            sage: phi = DrinfeldModule(A, [z, 4, 1, z])
+            sage: phi.frobenius_charpoly_gekeler()
+            X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + (4*z2*T^3 + (2*z2 + 3)*T^2 + (2*z2 + 2)*T + z2 + 3)*X + (3*z2 + 2)*T^6 + (4*z2 + 2)*T^5 + (3*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
+                
+        ALGORITHM:
+
+            Construct a linear system based on the requirement that
+            the Frobenius satisfies a degree r polynomial with 
+            coefficients in the regular function ring. 
+        """
+        Fq = self._Fq
+        L = self.category().base_over_constants_field()
+        q = Fq.cardinality()
+        r,n = self.rank(), L.degree(Fq)
+        # Compute constants that determine the block structure of the 
+        # linear system. TODO: Remove the magic behind this by making 
+        # the logical structure clearer.
+        shifts = [(n*(r - i))//r + 1 for i in range(r)]
+        rows, cols = n*r + 1, sum(shifts)
+        block_shifts = [0]
+        for i in range(r-1):
+            block_shifts.append(block_shifts[-1] + shifts[i])
+        # Compute the images \phi_T^i for i = 2 .. n.
+        # We could alternatively use phi(T) to do this. 
+        # This probably shouldn't be here; this functionality
+        # should either be moved elsewhere or slower methods 
+        # should be used.
+        gen_powers = [[1], self.coefficients(sparse=False)] \
+                     + [[0 for _ in range(r*i + 1)] for i in range(2, n + 1)]
+        for i in range(2, n + 1):
+            for j in range(r*i + 1):
+                # low_deg: lowest degree term of \phi_x contributing 
+                # to the skew degree term of \tau^j.
+                # high_deg: Highest degree term of \phi_x contributing
+                # to the skew degree term of \tau^j.
+                low_deg, high_deg = max(j - r*(i-1), 0), min(r, j)
+                recs = [gen_powers[i-1][j - k]**(q**k) for k in \
+                                        range(low_deg, high_deg + 1)]
+                gen_powers[i][j] = sum([a*b for a, b in zip(
+                    gen_powers[1][low_deg:high_deg + 1], recs)])
+        sys, rhs = Matrix(L, rows, cols), vector(L, rows)
+        rhs[rows - 1] = -1
+        for j in range(r):
+            for k in range(shifts[j]):
+                for i in range(len(gen_powers[k])):
+                    sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
+        sol = list(sys.solve_right(rhs))
+        sol_Fq = list(map(lambda x: 
+            self.base_over_constants_field()(x).vector()[0], sol))
+        char_poly = []
+        for i in range(r):
+            char_poly.append([sol_Fq[block_shifts[i] 
+                + j] for j in range(shifts[i])])
+        return PolynomialRing(self._function_ring, var)(char_poly + [1])
+
+
+    def frobenius_charpoly_crystalline(self, var = 'X'):
+        r"""
+        Method to compute the characteristic polynomial of the
+        Frobenius endomorphism using Crystalline cohomology.
+        Currently only works for Drinfeld modules defined over
+        Fq[T], but otherwise does not impose any other constraints,
+        including on the rank, minimal polynomial, or that the Drinfeld
+        module is defined over the prime field.
+
+        INPUT: (default: ``'X'``) the name of the second variable
+
+        OUTPUT: a univariate polynomial with coefficients in the
+                function ring
+
+        EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(8)
+            sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
+            sage: phi.frobenius_charpoly_crystalline('V')
+            x^10 + x^9 + (3*V + z2 + 1)*x^8 + (-V^2 + z2*V + 2*z2 + 1)*x^7 + (-V^3 + (z2 + 2)*V^2 + (4*z2 + 2)*V - 1)*x^6 + (3*V^4 + V^3 + 3*z2*V + 3*z2 + 3)*x^5 + ((4*z2 + 2)*V^4 + (3*z2 + 4)*V^3 + 3*V^2 + (2*z2 + 4)*V + 4*z2 + 1)*x^4 + (3*V^5 + (2*z2 + 3)*V^4 - V^3 + (2*z2 + 2)*V^2 + (z2 + 3)*V + 4*z2)*x^3 + (3*V^6 + (3*z2 + 2)*V^5 + (4*z2 + 1)*V^4 + z2*V^3 + (4*z2 + 4)*V^2 + 4*z2*V)*x^2 + (2*V^7 + 3*V^6 + 2*z2*V^5 + (2*z2 + 3)*V^4 + (4*z2 + 3)*V^3 + (z2 + 2)*V^2 + (z2 + 4)*V + 2*z2 + 2)*x + V^8 + (4*z2 + 3)*V^6 + (4*z2 + 4)*V^4 + 4*z2*V^2 + (z2 + 2)*V + z2
+            
+            sage: Fq = GF(27)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(10)
+            sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
+            sage: phi.frobenius_charpoly_crystalline('V')
+            x^11 + (z3^2 + 2*z3)*x^10 + ((z3 + 1)*V + z3)*x^9 + ((2*z3^2 + z3 + 2)*V^2 + (2*z3^2 + z3 + 1)*V + 2*z3^2 + z3 + 2)*x^8 + ((z3^2 + z3)*V^3 + 2*z3^2*V^2 + (2*z3^2 + z3 + 2)*V + 1)*x^7 + ((z3^2 + 2*z3)*V^4 + (2*z3^2 + 2*z3)*V^3 + (z3^2 + 1)*V^2 + (z3^2 + 1)*V + z3^2 + z3 + 2)*x^6 + ((z3^2 + z3)*V^5 + (z3^2 + 1)*V^4 + (z3^2 + 1)*V^3 + (z3^2 + 2*z3 + 1)*V^2 + (z3^2 + 2)*V + z3^2 + 2*z3 + 1)*x^5 + ((z3^2 + z3 + 1)*V^6 + (z3^2 + 2*z3 + 1)*V^5 + (2*z3^2 + z3)*V^4 + (z3^2 + 2)*V^2 + (2*z3^2 + 2*z3)*V + z3^2 + 1)*x^4 + (2*z3*V^7 + 2*z3^2*V^6 + (z3^2 + z3)*V^5 + (2*z3 + 2)*V^4 + 2*z3*V^3 + (z3 + 2)*V^2 + z3^2*V + z3^2 + 2*z3 + 1)*x^3 + (2*z3*V^8 + (z3^2 + z3)*V^7 + (2*z3^2 + z3 + 2)*V^6 + (z3^2 + 2)*V^5 + V^4 + (2*z3^2 + 2)*V^3 + (z3^2 + z3 + 1)*V^2 + (z3 + 2)*V + 2*z3^2 + z3 + 1)*x^2 + (2*z3*V^9 + z3*V^8 + (z3^2 + z3 + 1)*V^7 + V^6 + (z3^2 + 2*z3 + 2)*V^5 + (z3^2 + 2*z3 + 1)*V^4 + V^3 + (2*z3^2 + z3 + 2)*V^2 + V + 2*z3^2 + z3)*x + z3*V^10 + (z3^2 + z3)*V^9 + (2*z3^2 + 1)*V^8 + (2*z3^2 + 2*z3)*V^7 + z3*V^6 + (z3^2 + 2*z3 + 2)*V^5 + V^4 + z3*V^3 + (z3^2 + 1)*V^2 + (2*z3^2 + 2*z3 + 2)*V + z3^2
+
+        ALGORITHM:
+
+        Compute the characteristic polynomial of the endomorphism
+        acting on the crystalline cohomology of a Drinfeld module.
+        A recurrence on elements of the cohomology allows us to
+        compute a matrix representation of the Frobenius endomorphism
+        efficiently using a companion matrix method.
+
+
+        """
+        Fq = self._Fq
+        L = self.category().base_over_constants_field()
+        q = Fq.cardinality()
+        r, n = self.rank(), L.degree(Fq)
+        # Precision can be lowered to (n + 1)/m.
+        # where m is the degree of the A-characteristic.
+        # This requires additional computation. 
+        # Computing to precision n + 1 avoids this.
+        precision = n + 1 
+        nstar = ceil(sqrt(n))
+        n1, n0 = n // nstar, n % nstar
+        dm = self.coefficients(sparse=False)
+        rec_coeffs = [dm[i]/dm[r] for i in range(r)]
+
+        S = PolynomialRing(L, name=var)
+        SM = MatrixSpace(S, r, r)
+        mu = (S.gen() - dm[0])**precision
+        mu_coeffs = mu.coefficients(sparse=False)
+
+        def companion(order):
+            # + [1] is required to satisfy formatting for companion matrix
+            M = SM(companion_matrix([c**(q**order) for c in rec_coeffs] + [1],\
+                format = 'top'))
+            M[0, r-1] += S.gen() / dm[r]**(q**order)
+            return M
+        C0 = prod([companion(i) for i in range(n0, 0, -1)])
+        C = prod([companion(i) for i in range(nstar + n0, n0, -1)])
+        moduli = [S([ c**(q**(-i*nstar % n)) for c in mu_coeffs]) \
+                                            for i in range(1, n1) ]
+        def reduce_and_frobenius(order, modulus):
+            M = Matrix(S, r, r)
+            for i, row in enumerate(C):
+                for j, entry in enumerate(row):
+                    reduction = entry % modulus
+                    M[i, j] = S([c**(q**order) \
+                                for c in reduction.coefficients(sparse=False)])
+            return M
+        reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
+                                for i in range(n1 - 1, 0, -1)]
+        return (prod(reduced_companions)*C*C0).charpoly()
+
+
+        
     def frobenius_norm(self):
         r"""
         Return Frobenius norm of the Drinfeld module, if the rank is
@@ -279,6 +444,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         Let `n` be the degree of the base field over `\mathbb{F}_q` Then the
         Frobenius norm has degree `n`.
+
+        OUTPUT: an element in the function ring
 
         EXAMPLES::
 
@@ -326,11 +493,26 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         Let `\mathbb{F}_q[T]` be the function ring, write `\chi = T^2 -
         A(X)T + B(X) \in \mathbb{F}_q[T][X]` for the characteristic
-        polynomial of the Frobenius endomorphism. The *Frobenius trace*
-        is defined as the polynomial `A(T) \in \mathbb{F}_q[T]`.
+        polynomial of the Frobenius endomorphism. The *Frobenius norm*
+        is defined as the polynomial `B(T) \in \mathbb{F}_q[T]`.
 
         Let `n` be the degree over `\mathbb{F}_q` of the base codomain.
-        Then the Frobenius trace has degree at most `\frac{n}{2}`.
+        Then the Frobenius trace has degree `\leq \frac{n}{2}`.
+
+        OUTPUT: an element in the function ring
+
+        ALGORITHM:
+
+            Let `A(T)` denote the Frobenius trace and `B(T)` denote the
+            Frobenius norm. We begin by computing `B(T)`, see docstring
+            of method :meth:`frobenius_norm` for details. The
+            characteristic polynomial of the Frobenius yields `t^{2n} -
+            \phi_A t^n + \phi_B = 0`, where `t^n` is the Frobenius
+            endomorphism. As `\phi_B` is now known, we can compute
+            `\phi_A = (t^{2n} + \phi_B) / t^n`. We get `A(T)` by
+            inverting this quantity, using the method
+            :meth:`sage.rings.function_fields.drinfeld_module.drinfeld_module.DrinfeldModule.invert`,
+            see its docstring for details.
 
         EXAMPLES::
 
@@ -352,19 +534,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
             sage: A == -phi.frobenius_charpoly()[1]
             True
-
-        ALGORITHM:
-
-            Let `A(T)` denote the Frobenius trace and `B(T)` denote the
-            Frobenius norm. We begin by computing `B(T)`, see docstring
-            of method :meth:`frobenius_norm` for details. The
-            characteristic polynomial of the Frobenius yields `t^{2n} -
-            \phi_A t^n + \phi_B = 0`, where `t^n` is the Frobenius
-            endomorphism. As `\phi_B` is now known, we can compute
-            `\phi_A = (t^{2n} + \phi_B) / t^n`. We get `A(T)` by
-            inverting this quantity, using the method
-            :meth:`sage.rings.function_fields.drinfeld_module.drinfeld_module.DrinfeldModule.invert`,
-            see its docstring for details.
         """
         self._check_rank_two()
         # Notations from Schost-Musleh:
@@ -384,6 +553,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         - ``ore_pol`` -- the Ore polynomial whose preimage we want to
           compute
+
+        OUTPUT: a function ring element
 
         EXAMPLES::
 
@@ -408,7 +579,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
             Traceback (most recent call last):
             ...
             ValueError: input must be in the image of the Drinfeld module
-
             sage: phi.invert(t^3 + t^2 + 1)
             Traceback (most recent call last):
             ...
@@ -463,9 +633,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 mat_lines[j][i] = phi_T_i[r*j]
         mat = Matrix(mat_lines)
         vec = vector([list(ore_pol)[r*j] for j in range(k+1)])
-        coeffs_K = list((mat**(-1)) * vec)
-        coeffs_Fq = list(map(lambda x: base_over_Fq(x).vector()[0], coeffs_K))
-        pre_image = self._function_ring(coeffs_Fq)
+        coeffs = list((mat**(-1)) * vec)
+        coeffs_in_Fq = []
+        for coeff in coeffs:
+            coeff_in_Fq = base_over_Fq(coeff).vector()[0]
+            coeffs_in_Fq.append(coeff_in_Fq)
+        pre_image = self._function_ring(coeffs_in_Fq)
 
         if self(pre_image) == ore_pol:
             return pre_image
@@ -485,6 +658,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         A rank two Drinfeld module is *ordinary* if and only if it is
         not supersingular; see :meth:`is_supersingular`.
+
+        OUTPUT: a boolean
 
         EXAMPLES::
 
@@ -519,6 +694,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         if the function ring-characteristic divides the Frobenius
         trace. An *ordinary* rank two finite Drinfeld module is a
         Drinfeld module that is not supersingular.
+
+        OUTPUT: a boolean
 
         EXAMPLES::
 
