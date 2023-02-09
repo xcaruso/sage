@@ -1,19 +1,29 @@
+from sage.misc.cachefunc import cached_method
 from sage.rings.ring import CommutativeRing, CommutativeRing
 from sage.rings.ring_extension import RingExtension
 from sage.rings.ideal import Ideal_generic
 from sage.categories.integral_domains import IntegralDomains
-
 from sage.structure.element import Element, coerce_binop
 
+def par_str(a, filter=None):
+    if filter is None:
+        filter = lambda x:x
+    if a._is_atomic():
+        return "{filter(a)}"
+    else:
+        return "({filter(a)})"
 
-def pow_str(a,b):
+def pow_str(a,b,filter=None):
     r"""
     Representation of a^b
     """
+    if filter is None:
+        filter = lambda x:x
     if b > 1:
-        return f"({a})^{b}"
+        return f"{par_str(a,filter=filter)}^{b}"
     else:
-        return f"({a})"
+        return f"{par_str(a,filter=filter)}"
+
 
 class MyLocalizationElement(Element):
     def __init__(self, parent, *x, simplify=True):
@@ -91,7 +101,7 @@ class MyLocalizationElement(Element):
             den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
             for i in pos[1:] :
                 den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-            res = f"({self._num})/({den})"
+            res = f"{par_str(self._num)}/{par_str(den)}"
         else:
             res = f"{self._num}"
         import re
@@ -104,6 +114,9 @@ class MyLocalizationElement(Element):
             res = re.sub(f"\\b{S.variable_names()[i]}\\b", R.variable_names()[i], res)
         return res
 
+    def _latex_(self):
+        
+    
     def _get_common_den(self,other):
         return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
 
@@ -372,13 +385,12 @@ class MyLocalization(CommutativeRing):
 
     Element = MyLocalizationElement
 
-    def __init__(self, base, units, names=None, inverse_names=None, normalize=True, category=None):
-        A = base
+    def __init__(self, base, units, names=None, normalize=True, category=None):
         J = base.ideal(0)
         self._is_ideal_domain = False
 
         try:
-            if A in IntegralDomains():
+            if base in IntegralDomains():
                 self._has_equality_test = True
                 self._is_integral_domain = True
                 if category is None:
@@ -394,42 +406,36 @@ class MyLocalization(CommutativeRing):
             self._has_equality_test = False
 
         try:
-            _ = A.zero()._floordiv_
+            _ = base.zero()._floordiv_
             self._has_simplify = True
         except AttributeError:
             self._has_simplify = False
-    
+            
         self._ideal = J
         self._numring = base
         self._units = units
         
-        if bool(inverse_names) and bool(names):
-            raise ValueError("both names and inverse_names are provided")
-
-        if inverse_names is None:
-            inverse_names = tuple(f"u{randint(1000,9999)}" for _ in range(len(units)))
         if names is None:
-            try:
-                orig_names = base.variable_names()
-            except AttributeError:
-                orig_names = base.variable_names()
-            names = orig_names + inverse_names
+            names = base.variable_names()
         self._assign_names(names)
-
-        self._gens = (tuple(self(v,[0]*len(units)) for v in base.gens())
-                      + tuple(self(base(1),
-                                   [1 if j==i else 0 for j in range(len(units))])
-                              for i in range(len(units))))
-
         CommutativeRing.__init__(self,base.base_ring(), names=names, normalize=normalize, category=category)
         self.register_coercion(base)
 
+        self._gens = tuple(self(v,[0]*len(units)) for v in base.gens())
+
+        
 
     def _repr_(self):
         return f"Localization of {self._numring} at {self._units}"
 
+    def _latex_(self):
+        s = latex(self._numring) + r"\left["
+        invs = [f"\\frac{{1}}{{{latex(u)}}}" for u in self._units]
+        s += ", ".join(invs) + r"\right]"
+        return s
+    
     def ngens(self):
-        return len(self._gens)
+        return self._numring.ngens()
 
     def gens(self):
         return self._gens
@@ -453,6 +459,9 @@ class MyLocalization(CommutativeRing):
         if self in IntegralDomains():
             return True
         return self._ideal.is_prime()
+
+    def inverse_of_units(self):
+        return [self(u).inverse_of_unit() for u in self._units]
 
     @cached_method
     def fraction_field(self):
@@ -552,8 +561,8 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
 ###
 
-Z6 = Integers(6)
-L = MyLocalization(Z6,[ZZ(3)])
-LL = MyLocalization(L,[ZZ(2)])
+# Z6 = Integers(6)
+# L = MyLocalization(Z6,[ZZ(3)])
+# LL = MyLocalization(L,[ZZ(2)])
 
 #print(L.is_zero())
