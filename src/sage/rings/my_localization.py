@@ -238,7 +238,7 @@ class MyLocalizationElement(Element):
 
         """
         I = self.parent().ideal(self)
-        I_numring = I.base_ideal()
+        I_numring = I.numerator_ideal()
         return I_numring.is_one()
 
     def inverse_of_unit(self):
@@ -474,7 +474,7 @@ class MyLocalizationIdeal_generic(Ideal_generic):
             True
 
         """
-        return elt.numerator() in self.base_ideal()
+        return elt.numerator() in self.numerator_ideal()
 
     def saturation(self,other):
         R = self.ring()

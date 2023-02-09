@@ -181,10 +181,17 @@ class QuotientRingElement(RingElement):
         if self.parent() in Fields():
             return not self.is_zero()
         try:
+            I = self.parent().defining_ideal() + [self.lift()]
+            return 1 in I
+        except (NotImplementedError, AttributeError):
+            pass
+        try:
             self.__invert__()
             return True
         except ArithmeticError:
             return False
+        except AttributeError:
+            raise NotImplementedError
         raise NotImplementedError
 
     def _repr_(self):
