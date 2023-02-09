@@ -1,6 +1,8 @@
 from sage.rings.ring import CommutativeRing, CommutativeRing
+from sage.rings.ring_extension import RingExtension
 from sage.rings.ideal import Ideal_generic
 
+from sage.structure.element import Element
 
 def pow_str(a,b):
     r"""
@@ -11,11 +13,11 @@ def pow_str(a,b):
     else:
         return f"({a})"
 
-class MyLocalizationElement(CommutativeRingElement):
+class MyLocalizationElement(Element):
     def __init__(self, parent, *x, simplify=True):
         r"""
 
-        EXAMPLES::
+        EXAMPLES:
 
         Example with simplification::
 
@@ -38,13 +40,13 @@ class MyLocalizationElement(CommutativeRingElement):
             0
 
         """
-        CommutativeRingElement.__init__(self, parent)
+        Element.__init__(self, parent)
         if len(x)==1:
             x = x[0]
             if isinstance(x, MyLocalizationElement):
                 num = x._num
-                powers = x._powers
-            elif x in self.parent().base():
+                powers = x._powers[:]
+            elif x in self.parent().numerator_ring():
                 num = x
                 powers = [0] * len(self.parent()._units)
             else:
@@ -64,7 +66,8 @@ class MyLocalizationElement(CommutativeRingElement):
                 powers[i] = p
         self._num = num
         self._powers = powers
-        
+
+    @cached_method
     def _repr_(self):
         r"""
 
@@ -86,9 +89,18 @@ class MyLocalizationElement(CommutativeRingElement):
             den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
             for i in pos[1:] :
                 den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-            return f"{self._num}/({den})"
+            res = f"{self._num}/({den})"
         else:
-            return f"{self._num}"
+            res = f"{self._num}"
+        import re
+
+        # In case the localization has different names than the original ring,
+        # we want to use the new names
+        R = self.parent()
+        S = R.numerator_ring()
+        for i in range(S.ngens()):
+            res = re.sub(f"\\b{S.gen(i)}\\b", str(R.variable_names()[i]), res)
+        return res
 
     def _get_common_den(self,other):
         return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
@@ -352,7 +364,7 @@ class MyLocalization(CommutativeRing):
 
     def __init__(self, base, units, names=None, inverse_names=None):
         A = base
-        J = A.ideal(0)
+        J = base.ideal(0)
 
         try:
             if A.is_integral_domain():
@@ -381,7 +393,7 @@ class MyLocalization(CommutativeRing):
             raise ValueError("both names and inverse_names are provided")
 
         if inverse_names is None:
-            inverse_names = tuple(f"u{i}" for i in range(len(units)))
+            inverse_names = tuple(f"u{randint(1000,9999)}" for _ in range(len(units)))
         if names is None:
             try:
                 orig_names = base.variable_names()
@@ -425,7 +437,7 @@ class MyLocalizationIdeal_generic(Ideal_generic):
     """
 
     @cached_method
-    def base_ideal(self):
+    def numerator_ideal(self):
         r"""
 
         EXAMPLES::
@@ -436,14 +448,14 @@ class MyLocalizationIdeal_generic(Ideal_generic):
             sage: I = L.ideal(L(yb,[2]))
             sage: I
             Ideal (yb/((xb)^2)) of Localization of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) at [xb]
-            sage: I.base_ideal()
+            sage: I.numerator_ideal()
             (Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y),
              0)
 
         """
         R = self.ring()
-        S = R.base()
-        gens_S = [S(g.numerator()) for g in self.gens()]
+        S = R.numerator_ring()
+        gens_S = [g.numerator() for g in self.gens()]
         I_S = S.ideal(gens_S)
         for u in R._units:
             I_S,_ = I_S.saturation(u)
@@ -466,22 +478,33 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
     def saturation(self,other):
         R = self.ring()
-        S = R.base()
-        I_S = self.base_ideal()
+        S = R.numerator_ring()
+        I_S = self.numerator_ideal()
         J_S = S.ideal([g._num for g in other.gens()])
         K_S, n = I_S.saturation(J_S)
         return (R.ideal([R(g) for g in K_S.gens()]),n)
     
     
-# class MyLocalizationExtension(RingExtension):
+# class MyLocalizationExtension(CommutativeRing):
 #     def __init__(self,base,units):
 #         if isinstance(base, QuotientRing_generic):
 #             R = base.cover_ring()
 #             I = base.defining_ideal()
-#             # todo...
+#             units_lift = [u.lift() for u in units]
+#             J = I
+#             for u in units_lift:
+#                 J = 
 #         elif isinstance(base, MyLocalization):
-#             R = base.ambient_ring()
+#             R = base.numerator_ring()
 #             U = base.units()
-#             # todo...
+#             backend = MyLocalization(R,U+units)
 #         else:
 #             backend = MyLocalization(base,units)
+
+
+P = QQ[("x","y")]
+P.inject_variables()
+PP = P.quotient(x*y, names=("xb","yb"))
+PP.inject_variables()
+P2 = MyLocalization(PP,[xb], names=("xl","yl","u"))
+P2.inject_variables()
