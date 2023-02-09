@@ -226,8 +226,8 @@ class MyLocalizationElement(CommutativeRingElement):
 
         """
         I = self.parent().ideal(self)
-        I_base = I.base_ideal()
-        return I_base.is_one()
+        I_numring = I.base_ideal()
+        return I_numring.is_one()
 
     def inverse_of_unit(self):
         r"""
@@ -313,7 +313,7 @@ class MyLocalization(CommutativeRing):
     Integral case::
     
         sage: R = MyLocalization(ZZ,[2,3])
-        sage: R._base
+        sage: R._numring
         Integer Ring
         sage: R._ideal
         Principal ideal (0) of Integer Ring
@@ -350,7 +350,7 @@ class MyLocalization(CommutativeRing):
 
     Element = MyLocalizationElement
 
-    def __init__(self, base, units, names="x"):
+    def __init__(self, base, units, names=None, inverse_names=None):
         A = base
         J = A.ideal(0)
 
@@ -372,34 +372,52 @@ class MyLocalization(CommutativeRing):
             self._has_simplify = False
     
         self._ideal = J
-        self._base = base
+        self._numring = base
         self._units = units
-        CommutativeRing.__init__(self,base)
+        CommutativeRing.__init__(self,base.base_ring())
         self.register_coercion(base)
-        self._assign_names('x') # Necessary for over() but why?
 
-        
+        if bool(inverse_names) and bool(names):
+            raise ValueError("both names and inverse_names are provided")
+
+        if inverse_names is None:
+            inverse_names = tuple(f"u{i}" for i in range(len(units)))
+        if names is None:
+            try:
+                orig_names = base.variable_names()
+            except AttributeError:
+                orig_names = base.variable_names()
+            names = orig_names + inverse_names
+        self._assign_names(names)
+
+        self._gens = (tuple(self(v,[0]*len(units)) for v in base.gens())
+                      + tuple(self(base(1),
+                                   [1 if j==i else 0 for j in range(len(units))])
+                              for i in range(len(units))))
 
     def _repr_(self):
-        return f"Localization of {self._base} at {self._units}"
+        return f"Localization of {self._numring} at {self._units}"
 
     def ngens(self):
-        return len(self._units)
+        return len(self._gens)
+
+    def gens(self):
+        return self._gens
 
     def gen(self,i):
-        return self(self._base(1),[1 if j==i else 0 for j in range(self.ngens())])
+        return self._gens[i]
 
     def _ideal_class_(self, num_gens):
         return MyLocalizationIdeal_generic
 
-    def base_ring(self):
-        return self._base
-
     def units(self):
         return self._units
 
-    def cover_ideal(self):
+    def numerator_ideal(self):
         return self._ideal
+
+    def numerator_ring(self):
+        return self._numring
         
 
 class MyLocalizationIdeal_generic(Ideal_generic):
