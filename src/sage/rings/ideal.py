@@ -1445,6 +1445,7 @@ class Ideal_principal(Ideal_generic):
             return self.gen().divides(other.gen())
         raise NotImplementedError
 
+
 class Ideal_pid(Ideal_principal):
     """
     An ideal of a principal ideal domain.
@@ -1685,6 +1686,17 @@ class Ideal_pid(Ideal_principal):
         if self.ring() is ZZ:
             return ZZ.residue_field(self, check = False)
         raise NotImplementedError("residue_field() is only implemented for ZZ and rings of integers of number fields.")
+
+    def saturation(self,other):
+        if not isinstance(other, Ideal_pid):
+            raise NotImplementedError
+        first = True
+        res = self.gen()
+        g = self.gen().gcd(other.gen())
+        while g.divides(res):
+            res //= g
+        return self.ring().ideal(res)
+            
 
 class Ideal_fractional(Ideal_generic):
     """
