@@ -4,25 +4,38 @@ from sage.rings.ring_extension import RingExtension
 from sage.rings.ideal import Ideal_generic
 from sage.categories.integral_domains import IntegralDomains
 from sage.structure.element import Element, coerce_binop
+from sage.misc.latex import latex
+from sage.misc.misc_c import prod
 
-def par_str(a, filter=None):
-    if filter is None:
-        filter = lambda x:x
+def par_str_latex(a):
     if a._is_atomic():
-        return "{filter(a)}"
+        return f"{latex(a)}"
     else:
-        return "({filter(a)})"
+        return f"\\left({latex(a)}\\right)"
 
-def pow_str(a,b,filter=None):
+def par_str(a):
+    if a._is_atomic():
+        return str(a)
+    else:
+        return f"({a})"
+    
+def pow_str(a,b):
+    r"""
+    Representation of a^b with b < 0
+    """
+    if b != 1:
+        return f"{par_str(a)}^({b})"
+    else:
+        return f"{par_str(a)}"
+
+def pow_str_latex(a,b):
     r"""
     Representation of a^b
     """
-    if filter is None:
-        filter = lambda x:x
     if b > 1:
-        return f"{par_str(a,filter=filter)}^{b}"
+        return f"{par_str_latex(a)}^{{{b}}}"
     else:
-        return f"{par_str(a,filter=filter)}"
+        return f"{par_str_latex(a)}"
 
 
 class MyLocalizationElement(Element):
@@ -79,7 +92,6 @@ class MyLocalizationElement(Element):
         self._num = num
         self._powers = powers
 
-    @cached_method
     def _repr_(self):
         r"""
 
@@ -93,19 +105,30 @@ class MyLocalizationElement(Element):
             4/((2)*(3)^2)
             sage: R(4,[3,0])
             4/((2)^3)
+
+        # TODO: bug with input [31] in jupyter (or 18)
         
         """
         nunits = len(self._powers)
         pos = [i for i in range(nunits) if self._powers[i] != 0]
-        if pos:
-            den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
-            for i in pos[1:] :
-                den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-            res = f"{par_str(self._num)}/{par_str(den)}"
-        else:
-            res = f"{self._num}"
-        import re
+        if self._num == 1 and not pos:
+            return "1"
 
+        facts = [pow_str(self.parent()._units[i],-self._powers[i]) for i in pos]
+        if self._num != 1:
+            facts = [par_str(self._num)] + facts
+
+        res = " * ".join(facts)
+        
+        # if pos:
+        #     den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
+        #     for i in pos[1:] :
+        #         den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
+        #     res = f"{par_str(self._num)}/{par_str(den)}"
+        # else:
+        #     res = f"{self._num}"
+
+        import re
         # In case the localization has different names than the original ring,
         # we want to use the new names
         R = self.parent()
@@ -115,7 +138,20 @@ class MyLocalizationElement(Element):
         return res
 
     def _latex_(self):
-        
+        tot = sum(self._powers)
+        if tot == 0:
+            return latex(self._num)
+        else:
+            res = f"\\frac{{{latex(self._num)}}}{{"
+            units = self.parent()._units
+            if tot == 1:
+                res += latex(units[self._powers.index(1)])
+            else:
+                dens = [pow_str_latex(units[i],self._powers[i])
+                        for i in range(len(units)) if self._powers[i] != 0]
+                res += r"\cdot ".join(dens)
+            res += "}"
+            return res
     
     def _get_common_den(self,other):
         return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
@@ -449,7 +485,7 @@ class MyLocalization(CommutativeRing):
     def units(self):
         return self._units
 
-    def numerator_ideal(self):
+    def numerator_kernel(self):
         return self._ideal
 
     def numerator_ring(self):
@@ -533,7 +569,9 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
         J, n = I.saturation(K)
         return R.ideal([R(g) for g in J.gens()]), n
-    
+
+    def is_prime(self):
+        return self.numerator_ideal().is_prime()
     
 # class MyLocalizationExtension(CommutativeRing):
 #     def __init__(self,base,units):

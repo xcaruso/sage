@@ -1199,9 +1199,6 @@ cdef class CommutativeRing(Ring):
             sage: R.localization((x*y, x**2+y**2))
             Localization of Multivariate Polynomial Ring in x, y over Finite Field of size 3 at (x*y, x^2 + y^2)
         """
-        if not self.is_integral_domain():
-            raise TypeError("self must be an integral domain.")
-
         from sage.rings.my_localization import MyLocalization
         return MyLocalization(self, additional_units, names=names, normalize=normalize, category=category)
 

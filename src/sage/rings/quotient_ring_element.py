@@ -679,7 +679,7 @@ class QuotientRingElement(RingElement):
             return rich_to_bool(op, 0)
         I = self.parent().defining_ideal()
         try:
-            return (self.__rep - other.__rep) in I
+            return rich_to_bool(op, 0 if (self.__rep - other.__rep) in I else 1)
         except NotImplementedError:
             return richcmp(I.reduce(self.__rep), I.reduce(other.__rep), op)
 

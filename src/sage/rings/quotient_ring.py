@@ -1477,7 +1477,8 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         sat, n = J.saturation(K)
         return R.ideal([R(g) for g in sat.gens()]), n
 
-        
+    def is_prime(self):
+        return self.cover_ideal().is_prime()
         
     
 class QuotientRingIdeal_principal(ideal.Ideal_principal, QuotientRingIdeal_generic):
