@@ -338,7 +338,7 @@ class MyLocalizationElement(Element):
         for i in range(len(units)):
             res_num *= units[i]**self._powers[i]
         return self.parent()(res_num, res_powers)
-            
+
     @coerce_binop
     def __eq__(self,other):
         r"""
