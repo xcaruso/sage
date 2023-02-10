@@ -94,19 +94,36 @@ class MyLocalizationElement(Element):
 
     def _repr_(self):
         r"""
-
+        How this element should be represented
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
-            sage: R(4,[0,0])
-            4
-            sage: R(4,[1,2])
-            4/((2)*(3)^2)
-            sage: R(4,[3,0])
-            4/((2)^3)
+            sage: P.<x,y> = QQ[]
+            sage: L = P.localization([x+y,y])
+            sage: u,v = L.inverse_of_units()
+            sage: L(1)
+            1
+            sage: u
+            (x + y)^-1
+            sage: v
+            y^-1
+            sage: L(x-y)*u*v^2
+            (x - y) * (x + y)^-1 * y^-2
+            sage: L(x)*u*v^2
+            x * (x + y)^-1 * y^-2
 
-        # TODO: bug with input [31] in jupyter (or 18)
+        ..TESTS::
+
+            sage: P.<x,y> = QQ[]
+            sage: L.<xl,yl> = P.localization([x+y,y])
+            sage: L(x,[])
+            xl
+            sage: L(x)
+            xl
+            sage: L(x+y).inverse_of_unit()
+            (xl + yl)^-1
+            sage: x
+            x
         
         """
         nunits = len(self._powers)
@@ -114,23 +131,17 @@ class MyLocalizationElement(Element):
         if self._num == 1 and not pos:
             return "1"
 
-        facts = [pow_str(self.parent()._units[i],-self._powers[i]) for i in pos]
+        facts = [f"{par_str(self.parent()._units[i])}^{-self._powers[i]}"
+                 for i in pos]
+
         if self._num != 1:
             facts = [par_str(self._num)] + facts
 
         res = " * ".join(facts)
-        
-        # if pos:
-        #     den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
-        #     for i in pos[1:] :
-        #         den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-        #     res = f"{par_str(self._num)}/{par_str(den)}"
-        # else:
-        #     res = f"{self._num}"
 
-        import re
         # In case the localization has different names than the original ring,
         # we want to use the new names
+        import re
         R = self.parent()
         S = R.numerator_ring()
         for i in range(S.ngens()):
@@ -138,6 +149,26 @@ class MyLocalizationElement(Element):
         return res
 
     def _latex_(self):
+        r"""
+        How this element should be represented in latex.
+
+        EXAMPLES::
+
+            sage: P.<x,y> = QQ[]
+            sage: L = P.localization([x+y,y])
+            sage: u,v = L.inverse_of_units()
+            sage: latex(L(1))
+            1
+            sage: latex(u)
+            \frac{1}{ x + y }
+            sage: latex(v)
+            \frac{1}{ y }
+            sage: latex((x+y)*u^2*v)
+            \frac{1}{\left(x + y\right)\cdot y}
+            sage: latex(y*u^2*v)
+            \frac{1}{\left(x + y\right) ^{ 2 }}
+
+        """
         tot = sum(self._powers)
         if tot == 0:
             return latex(self._num)
@@ -147,7 +178,8 @@ class MyLocalizationElement(Element):
             if tot == 1:
                 res += latex(units[self._powers.index(1)])
             else:
-                dens = [pow_str_latex(units[i],self._powers[i])
+                dens = [par_str_latex(units[i])
+                        + (("^{" + latex(self._powers[i]) + "}") if self._powers[i] > 1 else "")
                         for i in range(len(units)) if self._powers[i] != 0]
                 res += r"\cdot ".join(dens)
             res += "}"
