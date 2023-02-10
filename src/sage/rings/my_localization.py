@@ -19,25 +19,6 @@ def par_str(a):
     else:
         return f"({a})"
     
-def pow_str(a,b):
-    r"""
-    Representation of a^b with b < 0
-    """
-    if b != 1:
-        return f"{par_str(a)}^({b})"
-    else:
-        return f"{par_str(a)}"
-
-def pow_str_latex(a,b):
-    r"""
-    Representation of a^b
-    """
-    if b > 1:
-        return f"{par_str_latex(a)}^{{{b}}}"
-    else:
-        return f"{par_str_latex(a)}"
-
-
 class MyLocalizationElement(Element):
     def __init__(self, parent, *x, simplify=True):
         r"""
@@ -46,7 +27,7 @@ class MyLocalizationElement(Element):
 
         Example with simplification::
 
-            sage: L = MyLocalization(ZZ,[2,3])
+            sage: L = ZZ.localization([2,3])
             sage: L(4)
             4
             sage: L(4,[1,0])
@@ -56,11 +37,11 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = PP.localization([xb])
             sage: L._has_simplify
             False
             sage: L(xb,[1])
-            xb/((xb))
+            xb * xb^-1
             sage: L(0,[18])
             0
 
@@ -195,7 +176,7 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = PP.localization([xb])
             sage: elt = L(xb*yb,[4]) 
             sage: hash(elt) # random
             211140964612250627
@@ -208,11 +189,11 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(4).numerator()
             4
             sage: R(4,[2,3]).numerator()
-            4
+            1
 
         """
         return self._num
@@ -222,11 +203,11 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(4).denominator()
             1
             sage: R(4,[2,1]).denominator()
-            12
+            3
         
         """
         return prod(self.parent()._units[i]**self._powers[i]
@@ -237,13 +218,13 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(4,[0,0]) + R(6,[0,0])
             10
             sage: R(4,[0,1]) + R(6,[1,0])
-            26/((2)*(3))
+            13 * 3^-1
             sage: R(4,[2,3]) + R(6,[3,2])
-            26/((2)^3*(3)^3)
+            13 * 2^-2 * 3^-3
 
         """
         res_powers = self._get_common_den(other)
@@ -259,13 +240,13 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(4,[0,0]) - R(6,[0,0])
             -2
             sage: R(4,[0,1]) - R(6,[1,0])
-            -10/((2)*(3))
+            -5 * 3^-1
             sage: R(4,[2,3]) - R(6,[3,2])
-            -10/((2)^3*(3)^3)
+            -5 * 2^-2 * 3^-3
         
         """
         res_powers = self._get_common_den(other)
@@ -281,13 +262,13 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(4,[0,0]) * R(6,[0,0])
             24
             sage: R(4,[0,1]) * R(6,[1,0])
-            24/((2)*(3))
+            4
             sage: R(4,[2,3]) * R(6,[3,2])
-            24/((2)^5*(3)^5)
+            2^-2 * 3^-4
        
         
         """
@@ -306,14 +287,14 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xx,yy> = P.quotient(x*y)
-            sage: L = MyLocalization(PP,[xx])
+            sage: L = PP.localization([xx])
             sage: L(x).is_unit()
             True
             sage: L(y).is_unit()
             False
         
             sage: PP.<xx,yy> = P.quotient(x^2)
-            sage: L = MyLocalization(PP,[xx])
+            sage: L = PP.localization([xx])
             sage: L(x).is_unit()
             True
             sage: L(y).is_unit()
@@ -326,24 +307,20 @@ class MyLocalizationElement(Element):
 
     def inverse_of_unit(self):
         r"""
-
         EXAMPLES::
 
-            sage: L.<a,b> = MyLocalization(ZZ,[2,3])
+            sage: L = ZZ.localization([2,3])
             sage: L(1).inverse_of_unit()
             1
             sage: L(-1).inverse_of_unit()
             1
             sage: L(2).inverse_of_unit()
-            1/((2))
+            2^-1
             sage: L(-3).inverse_of_unit()
-            -1/((3))
+            -1 * 3^-1
+            sage: a, b = L.inverse_of_units()
             sage: a.inverse_of_unit()
             2
-            sage: L(5).inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            NotImplementedError:
 
         It is not currently possible to compute the inverse for all units.
         ::
@@ -351,7 +328,16 @@ class MyLocalizationElement(Element):
             sage: L(6).inverse_of_unit()
             Traceback (most recent call last):
             ...
-            NotImplementedError: 
+            NotImplementedError: Unable to invert that element
+
+        Because checking whether an element is a unit can be expensive, outside
+        of known cases, the method always fails with NotImplementedError.
+        ::
+        
+            sage: L(5).inverse_of_unit()
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: Unable to invert that element
 
         """
         units = self.parent()._units
@@ -366,7 +352,7 @@ class MyLocalizationElement(Element):
                 res_powers = [1 if units[i] == num else 0 for i in range(len(units))]
                 break
         else:
-            raise NotImplementedError
+            raise NotImplementedError("Unable to invert that element")
         for i in range(len(units)):
             res_num *= units[i]**self._powers[i]
         return self.parent()(res_num, res_powers)
@@ -377,7 +363,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = ZZ.localization([2,3])
             sage: R(2) == R(4,[1,0])
             True
             sage: R(2) == R(6,[1,0])
@@ -385,7 +371,7 @@ class MyLocalizationElement(Element):
 
             sage: A.<x,y> = QQ[] # 2 variables because no saturate for univariate ideals
             sage: AA.<xx,yy> = A.quotient(x^2)
-            sage: L = MyLocalization(AA,[xx])
+            sage: L = AA.localization([xx])
             sage: L(1) == L(0)
             True
             sage: L(x) == L(0)
@@ -415,7 +401,7 @@ class MyLocalization(CommutativeRing):
 
     Integral case::
     
-        sage: R = MyLocalization(ZZ,[2,3])
+        sage: R = ZZ.localization([2,3])
         sage: R._numring
         Integer Ring
         sage: R._ideal
@@ -427,27 +413,28 @@ class MyLocalization(CommutativeRing):
     
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
-        sage: L = MyLocalization(PP,[xb-yb])
-        sage: L._ideal # incorrect
-        Ideal (x + y) of Multivariate Polynomial Ring in x, y over Rational Field
+        sage: L = PP.localization([xb-yb])
+        sage: L._ideal
+        Ideal (xb + yb) of Quotient of  Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2)
         sage: L._units
-        [x - y]
+        [xb - yb]
 
     Localization by a non-divisor of 0::
 
-        sage: L = MyLocalization(PP,[xb-yb^2])
-        sage: L._ideal # incorrect
-        Ideal (x^2 - y^2) of Multivariate Polynomial Ring in x, y over Rational Field
+        sage: L = PP.localization([xb-yb^2])
+        sage: L._ideal 
+        Ideal (0) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2)
         sage: L._units
-        [-y^2 + x]
+        [-yb^2 + xb]
 
-    Elements can be given a name for input purposes::
+    Inverses of elements can be recovered::
 
-        sage: L.<xinv> = MyLocalization(PP,[xb])
+        sage: L = PP.localization([xb])
+        sage: xinv, = L.inverse_of_units()
         sage: xinv
-        1/((xb))
+        xb^-1
         sage: xb*xinv
-        xb/((xb))
+        xb * xb^-1
 
     """
 
@@ -553,13 +540,12 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = PP.localization([xb])
             sage: I = L.ideal(L(yb,[2]))
             sage: I
-            Ideal (yb/((xb)^2)) of Localization of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) at [xb]
+            Ideal (yb * xb^-2) of Localization of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) at [xb]
             sage: I.numerator_ideal()
-            (Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y),
-             0)
+            Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y)
 
         """
         R = self.ring()
@@ -577,7 +563,7 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = PP.localization([xb])
             sage: I = L.ideal(L(yb,[2]))
             sage: L(xb*yb,[4]) in I
             True
@@ -617,22 +603,22 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 #         elif isinstance(base, MyLocalization):
 #             R = base.numerator_ring()
 #             U = base.units()
-#             backend = MyLocalization(R,U+units)
+#             backend = PP.localization(U+units)
 #         else:
-#             backend = MyLocalization(base,units)
+#             backend = PP.localization(units)
 
 
 # P = QQ[("x","y")]
 # P.inject_variables()
 # PP = P.quotient(x*y, names=("xb","yb"))
 # PP.inject_variables()
-# P2 = MyLocalization(PP,[xb], names=("xl","yl","u"))
+# P2 = PP.localization([xb], names=("xl","yl","u"))
 # P2.inject_variables()
 
 ###
 
 # Z6 = Integers(6)
-# L = MyLocalization(Z6,[ZZ(3)])
-# LL = MyLocalization(L,[ZZ(2)])
+# L = PP.localization([ZZ(3)])
+# LL = PP.localization([ZZ(2)])
 
 #print(L.is_zero())
