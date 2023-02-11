@@ -118,7 +118,7 @@ from sage.misc.cachefunc import cached_method
 from sage.categories.rings import Rings
 from sage.categories.commutative_rings import CommutativeRings
 from sage.rings.zero_ring import ZeroRing
-from sage.rings.my_localization import MyLocalization
+from sage.rings.localized_ring import LocalizedRing
 
 
 import sage.interfaces.abc
@@ -1404,7 +1404,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         return QuotientRingIdeal_generic
 
     def simplify(self):
-        from sage.rings.my_localization import localization_with_simplification
+        from sage.rings.localized_ring import localization_with_simplification
         R = self.cover_ring()
         try:
             Rs, f = R.simplify()   # f : R -> Rs
@@ -1420,7 +1420,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
                 xs = f(x.lift())   # in Rs
                 y = xs.list()      # in S
                 return to_ring(y)
-        elif isinstance(Rs, MyLocalization):
+        elif isinstance(Rs, LocalizedRing):
             S = Rs.numerator_ring()
             I = Rs.ideal(gens)
             K = I.numerator_ideal()

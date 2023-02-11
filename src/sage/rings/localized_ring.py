@@ -5,9 +5,16 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.ring import CommutativeRing, CommutativeRing
 from sage.rings.ideal import Ideal_generic
 
+from sage.categories.homset import Hom
+from sage.rings.morphism import RingHomomorphism
+from sage.rings.homset import RingHomset_generic
+
 from sage.misc.cachefunc import cached_method
 from sage.misc.latex import latex
 
+
+# Elements
+##########
 
 def par_str(a):
     if a._is_atomic():
@@ -16,7 +23,7 @@ def par_str(a):
         return f"({a})"
 
 
-class MyLocalizationElement(Element):
+class LocalizedRingElement(Element):
     def __init__(self, parent, *x, simplify=True):
         r"""
 
@@ -24,7 +31,7 @@ class MyLocalizationElement(Element):
 
         Example with simplification::
 
-            sage: L = MyLocalization(ZZ,[2,3])
+            sage: L = LocalizedRing(ZZ,[2,3])
             sage: L(4)
             4
             sage: L(4,[1,0])
@@ -34,7 +41,7 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = LocalizedRing(PP,[xb])
             sage: L._has_simplify
             False
             sage: L(xb,[1])
@@ -47,12 +54,21 @@ class MyLocalizationElement(Element):
         R = parent.numerator_ring()
         if len(x) == 1:
             x = x[0]
-            if isinstance(x, MyLocalizationElement):
+            if isinstance(x, LocalizedRingElement):
                 num = R(x._num)
                 denom = R(x._denom)
             else:
-                num = R(x)
-                denom = R.one()
+                try:
+                    num = R(x)
+                    denom = R.one()
+                except (TypeError, ZeroDivisionError):
+                    try:
+                        num = R(x.numerator())
+                        denom = R(x.denominator())
+                        if not parent.ideal(denom).is_one():
+                            raise ValueError("denominator is not invertible")
+                    except (TypeError, AttributeError):
+                        raise ValueError("unable to map %s to %s" % (x, parent))
         elif len(x) == 2:
             num = R(x[0])
             denom = R(x[1])
@@ -81,7 +97,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4,[0,0])
             4
             sage: R(4,[1,2])
@@ -118,7 +134,7 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = LocalizedRing(PP,[xb])
             sage: elt = L(xb*yb,[4])
             sage: hash(elt) # random
             211140964612250627
@@ -131,7 +147,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4).numerator()
             4
             sage: R(4,[2,3]).numerator()
@@ -145,7 +161,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4).denominator()
             1
             sage: R(4,[2,1]).denominator()
@@ -159,7 +175,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4,[0,0]) + R(6,[0,0])
             10
             sage: R(4,[0,1]) + R(6,[1,0])
@@ -177,7 +193,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4,[0,0]) - R(6,[0,0])
             -2
             sage: R(4,[0,1]) - R(6,[1,0])
@@ -194,7 +210,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(4,[0,0]) * R(6,[0,0])
             24
             sage: R(4,[0,1]) * R(6,[1,0])
@@ -217,30 +233,28 @@ class MyLocalizationElement(Element):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xx,yy> = P.quotient(x*y)
-            sage: L = MyLocalization(PP,[xx])
+            sage: L = LocalizedRing(PP,[xx])
             sage: L(x).is_unit()
             True
             sage: L(y).is_unit()
             False
 
             sage: PP.<xx,yy> = P.quotient(x^2)
-            sage: L = MyLocalization(PP,[xx])
+            sage: L = LocalizedRing(PP,[xx])
             sage: L(x).is_unit()
             True
             sage: L(y).is_unit()
             True
 
         """
-        I = self.parent().ideal(self)
-        I_numring = I.numerator_ideal()
-        return I_numring.is_one()
+        return self.parent().ideal(self).is_one()
 
     def inverse_of_unit(self):
         r"""
 
         EXAMPLES::
 
-            sage: L.<a,b> = MyLocalization(ZZ,[2,3])
+            sage: L.<a,b> = LocalizedRing(ZZ,[2,3])
             sage: L(1).inverse_of_unit()
             1
             sage: L(-1).inverse_of_unit()
@@ -279,7 +293,7 @@ class MyLocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: R = MyLocalization(ZZ,[2,3])
+            sage: R = LocalizedRing(ZZ,[2,3])
             sage: R(2) == R(4,[1,0])
             True
             sage: R(2) == R(6,[1,0])
@@ -287,7 +301,7 @@ class MyLocalizationElement(Element):
 
             sage: A.<x,y> = QQ[] # 2 variables because no saturate for univariate ideals
             sage: AA.<xx,yy> = A.quotient(x^2)
-            sage: L = MyLocalization(AA,[xx])
+            sage: L = LocalizedRing(AA,[xx])
             sage: L(1) == L(0)
             True
             sage: L(x) == L(0)
@@ -308,7 +322,10 @@ class MyLocalizationElement(Element):
             return self.numerator()/self.denominator()
 
 
-class MyLocalization(CommutativeRing):
+# Parents
+#########
+
+class LocalizedRing(CommutativeRing):
     r"""
 
 
@@ -316,7 +333,7 @@ class MyLocalization(CommutativeRing):
 
     Integral case::
 
-        sage: R = MyLocalization(ZZ,[2,3])
+        sage: R = LocalizedRing(ZZ,[2,3])
         sage: R._numring
         Integer Ring
         sage: R._ideal
@@ -328,7 +345,7 @@ class MyLocalization(CommutativeRing):
 
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
-        sage: L = MyLocalization(PP,[xb-yb])
+        sage: L = LocalizedRing(PP,[xb-yb])
         sage: L._ideal # incorrect
         Ideal (x + y) of Multivariate Polynomial Ring in x, y over Rational Field
         sage: L._units
@@ -336,7 +353,7 @@ class MyLocalization(CommutativeRing):
 
     Localization by a non-divisor of 0::
 
-        sage: L = MyLocalization(PP,[xb-yb^2])
+        sage: L = LocalizedRing(PP,[xb-yb^2])
         sage: L._ideal # incorrect
         Ideal (x^2 - y^2) of Multivariate Polynomial Ring in x, y over Rational Field
         sage: L._units
@@ -344,7 +361,7 @@ class MyLocalization(CommutativeRing):
 
     Elements can be given a name for input purposes::
 
-        sage: L.<xinv> = MyLocalization(PP,[xb])
+        sage: L.<xinv> = LocalizedRing(PP,[xb])
         sage: xinv
         1/((xb))
         sage: xb*xinv
@@ -352,7 +369,7 @@ class MyLocalization(CommutativeRing):
 
     """
 
-    Element = MyLocalizationElement
+    Element = LocalizedRingElement
 
     def __init__(self, base, units, names=None, normalize=True, category=None):
         self._numring = base
@@ -409,7 +426,7 @@ class MyLocalization(CommutativeRing):
         return self._gens[i]
 
     def _ideal_class_(self, num_gens):
-        return MyLocalizationIdeal_generic
+        return LocalizedRingIdeal_generic
 
     def units(self):
         return self._units
@@ -453,7 +470,7 @@ class MyLocalization(CommutativeRing):
             S = RsI
             g = lambda x: to_RsI(f(x))         # g : R -> S
 
-        if isinstance(S, MyLocalization):
+        if isinstance(S, LocalizedRing):
             base = S._numring
             units = S._units + [ f(R(u)).numerator() for u in self._units ]
             ring = localization_with_simplification(base, units)
@@ -474,6 +491,10 @@ class MyLocalization(CommutativeRing):
 
         return ring, isom
 
+    def _Hom_(self, other, category):
+        return RingHomset_localized(self, other, category=category)
+
+
 
 def localization_with_simplification(base, units):
     simplified_units = [ ]
@@ -484,13 +505,13 @@ def localization_with_simplification(base, units):
         except NotImplementedError:
             simplified_units.append(u)
     if simplified_units:
-        return MyLocalization(base, simplified_units)
+        return LocalizedRing(base, simplified_units)
     else:
         return base
 
 
 
-class MyLocalizationIdeal_generic(Ideal_generic):
+class LocalizedRingIdeal_generic(Ideal_generic):
     r"""
     """
 
@@ -502,7 +523,7 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = LocalizedRing(PP,[xb])
             sage: I = L.ideal(L(yb,[2]))
             sage: I
             Ideal (yb/((xb)^2)) of Localization of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) at [xb]
@@ -526,13 +547,19 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = MyLocalization(PP,[xb])
+            sage: L = LocalizedRing(PP,[xb])
             sage: I = L.ideal(L(yb,[2]))
             sage: L(xb*yb,[4]) in I
             True
 
         """
         return elt.numerator() in self.numerator_ideal()
+
+    def is_zero(self):
+        return all(self.gens() == 0)
+
+    def is_one(self):
+        return self.numerator_ideal().is_one()
 
     def saturation(self,other):
         R = self.ring()
@@ -552,3 +579,46 @@ class MyLocalizationIdeal_generic(Ideal_generic):
 
     def is_prime(self):
         return self.numerator_ideal().is_prime()
+
+
+# Morphisms
+###########
+
+class LocalizedRingMorphism(RingHomomorphism):
+    def __init__(self, parent, numerator_morphism, base_map=None, check=True):
+        domain = parent.domain()
+        if not isinstance(domain, LocalizedRing):
+            raise TypeError
+        RingHomomorphism.__init__(self, parent)
+        self._numerator_morphism = f = parent.numerator_homset()(numerator_morphism, base_map=base_map, check=check)
+        if check:
+            for u in domain._units:
+                if not f(u).is_unit():
+                    raise ValueError("localized element %s is not mapped to a unit" % u)
+
+    def numerator_morphism(self):
+        return self._numerator_morphism
+
+    def _call_(self, x):
+        f = self._numerator_morphism
+        num = x.numerator()
+        denom = x.denominator()
+        return f(num) * f(denom).inverse_of_unit()
+
+    def _repr_(self):
+        s = RingHomomorphism._repr_(self)
+        d = self._numerator_morphism._repr_defn()
+        if d != '':
+            s += "\n  Defn: " + '\n        '.join(d.split('\n'))
+        return s
+
+
+class RingHomset_localized(RingHomset_generic):
+    Element = LocalizedRingMorphism
+
+    @cached_method
+    def numerator_homset(self):
+        return Hom(self.domain().numerator_ring(), self.codomain())
+
+    def _element_constructor_(self, *args, **kwds):
+        return self.element_class(self, *args, **kwds)
