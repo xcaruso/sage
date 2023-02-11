@@ -108,12 +108,18 @@ easily::
 # ****************************************************************************
 import sage.misc.latex as latex
 from . import ring, ideal, quotient_ring_element
+
 from sage.structure.category_object import normalize_names
 from sage.structure.richcmp import richcmp_method, richcmp
 import sage.structure.parent_gens
+
 from sage.misc.cachefunc import cached_method
+
 from sage.categories.rings import Rings
 from sage.categories.commutative_rings import CommutativeRings
+from sage.rings.zero_ring import ZeroRing
+from sage.rings.my_localization import MyLocalization
+
 
 import sage.interfaces.abc
 
@@ -1397,6 +1403,81 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             return QuotientRingIdeal_principal
         return QuotientRingIdeal_generic
 
+    def simplify(self):
+        from sage.rings.my_localization import localization_with_simplification
+        R = self.cover_ring()
+        try:
+            Rs, f = R.simplify()   # f : R -> Rs
+        except (AttributeError, NotImplementedError):
+            Rs = R
+            f = lambda x: x
+        gens = [ f(x) for x in self.defining_ideal().gens() ]  # in Rs
+        if isinstance(Rs, QuotientRing_generic):
+            S = Rs.cover_ring()
+            K = Rs.defining_ideal() + S.ideal([ x.lift() for x in gens ])
+            ring, to_ring = quotient_with_simplification(K)
+            def isom(x):  # self -> ring
+                xs = f(x.lift())   # in Rs
+                y = xs.list()      # in S
+                return to_ring(y)
+        elif isinstance(Rs, MyLocalization):
+            S = Rs.numerator_ring()
+            I = Rs.ideal(gens)
+            K = I.numerator_ideal()
+            SK, to_SK = quotient_with_simplification(S, K)
+            units = [ SK(u) for u in Rs._units ]
+            ring = localization_with_simplification(SK, units)
+            def isom(x):  # self -> ring
+                xs = f(x.lift())  # in Rs
+                num = to_SK(xs.numerator())      # in S/K
+                denom = to_SK(xs.denominator())  # in S/K
+                return ring(num) * ring(denom).inverse_of_unit()
+        else:
+            Is = Rs.ideal(gens)
+            ring, to_ring = quotient_with_simplification(Rs, Is)
+            def isom(x):  # self -> ring
+                xs = f(x.lift())
+                return to_ring(xs)
+
+        return ring, isom
+
+def quotient_with_simplification(ring, ideal):
+    from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+    from sage.rings.polynomial.polynomial_ring import PolynomialRing_general
+    from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
+    if all(x == 0 for x in ideal.gens()):
+        return ring, lambda x: x
+    elif 1 in ideal:
+        Q = ZeroRing(ring.base_ring())
+        z = Q()
+        return Q, lambda x: z
+    elif isinstance(ring, (PolynomialRing_general, MPolynomialRing_base)):
+        subs = { }
+        names = [ ]
+        for x in ring.gens():
+            xbar = ideal.reduce(x)
+            if xbar.is_constant():
+                subs[x] = xbar.constant_coefficient()
+            else:
+                names.append(str(x))
+        if subs:
+            A = PolynomialRing(ring.base_ring(), names)
+            gens = [ gen.subs(subs) for gen in ideal.gens() ]
+            gens = [ gen for gen in gens if gen != 0 ]
+            if gens:
+                I = A.ideal(gens)
+                Q = A.quotient(I)
+                return Q, lambda x: Q(x.subs(subs))
+            else:
+                return A, lambda x: x.subs(subs)
+        else:
+            Q = ring.quotient(ideal)
+            return Q, lambda x: Q(x)
+    else:
+        Q = ring.quotient(ideal)
+        return Q, lambda x: Q(x)
+
+
 class QuotientRingIdeal_generic(ideal.Ideal_generic):
     r"""
     Specialized class for quotient-ring ideals.
@@ -1453,7 +1534,6 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         """
         R = self.ring()
         J = self.cover_ideal()
-        assert other in R
         return other.lift() in J
 
     def saturation(self, other):
@@ -1466,21 +1546,21 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         J = self.cover_ideal()
         S = R.cover_ring()
         if isinstance(other, ideal.Ideal_generic):
-            if other.ring() is not R :
+            if other.ring() is not R:
                 raise TypeError
             K = other.cover_ideal()
         else:
             if not isinstance(other, (list,tuple)):
                 other = [other]
             other = [R(o).lift() for o in other]
-            K = S.ideal(other) 
+            K = S.ideal(other)
         sat, n = J.saturation(K)
         return R.ideal([R(g) for g in sat.gens()]), n
 
     def is_prime(self):
         return self.cover_ideal().is_prime()
-        
-    
+
+
 class QuotientRingIdeal_principal(ideal.Ideal_principal, QuotientRingIdeal_generic):
     r"""
     Specialized class for principal quotient-ring ideals.

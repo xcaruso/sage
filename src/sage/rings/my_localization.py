@@ -1,41 +1,19 @@
-from sage.misc.cachefunc import cached_method
-from sage.rings.ring import CommutativeRing, CommutativeRing
-from sage.rings.ring_extension import RingExtension
-from sage.rings.ideal import Ideal_generic
-from sage.categories.integral_domains import IntegralDomains
 from sage.structure.element import Element, coerce_binop
-from sage.misc.latex import latex
-from sage.misc.misc_c import prod
+from sage.categories.integral_domains import IntegralDomains
 
-def par_str_latex(a):
-    if a._is_atomic():
-        return f"{latex(a)}"
-    else:
-        return f"\\left({latex(a)}\\right)"
+from sage.rings.integer_ring import ZZ
+from sage.rings.ring import CommutativeRing, CommutativeRing
+from sage.rings.ideal import Ideal_generic
+
+from sage.misc.cachefunc import cached_method
+from sage.misc.latex import latex
+
 
 def par_str(a):
     if a._is_atomic():
         return str(a)
     else:
         return f"({a})"
-    
-def pow_str(a,b):
-    r"""
-    Representation of a^b with b < 0
-    """
-    if b != 1:
-        return f"{par_str(a)}^({b})"
-    else:
-        return f"{par_str(a)}"
-
-def pow_str_latex(a,b):
-    r"""
-    Representation of a^b
-    """
-    if b > 1:
-        return f"{par_str_latex(a)}^{{{b}}}"
-    else:
-        return f"{par_str_latex(a)}"
 
 
 class MyLocalizationElement(Element):
@@ -66,31 +44,36 @@ class MyLocalizationElement(Element):
 
         """
         Element.__init__(self, parent)
-        if len(x)==1:
+        R = parent.numerator_ring()
+        if len(x) == 1:
             x = x[0]
             if isinstance(x, MyLocalizationElement):
-                num = x._num
-                powers = x._powers[:]
-            elif x in self.parent().numerator_ring():
-                num = x
-                powers = [0] * len(self.parent()._units)
+                num = R(x._num)
+                denom = R(x._denom)
             else:
-                raise ValueError    
+                num = R(x)
+                denom = R.one()
+        elif len(x) == 2:
+            num = R(x[0])
+            denom = R(x[1])
         else:
-            num, powers = x
+            raise TypeError
 
         if num.is_zero():
-            powers = [0] * len(self.parent()._units)
-        elif simplify and self.parent()._has_simplify:
-            for i in range(len(powers)):
-                p = powers[i]
-                u = self.parent()._units[i]
-                while p > 0 and u.divides(num):
-                    num = num // u
-                    p -= 1
-                powers[i] = p
+            denom = R.one()
+        elif simplify:
+            if parent._has_gcd:
+                g = num.gcd(denom)
+                num = num // g
+                denom = denom // g
+            elif parent._has_floordiv:
+                units = parent._units
+                for u in units:
+                    while u.divides(num) and u.divides(denom):
+                        num = num // u
+                        denom = denom // u
         self._num = num
-        self._powers = powers
+        self._denom = denom
 
     def _repr_(self):
         r"""
@@ -106,27 +89,12 @@ class MyLocalizationElement(Element):
             sage: R(4,[3,0])
             4/((2)^3)
 
-        # TODO: bug with input [31] in jupyter (or 18)
-        
         """
-        nunits = len(self._powers)
-        pos = [i for i in range(nunits) if self._powers[i] != 0]
-        if self._num == 1 and not pos:
-            return "1"
-
-        facts = [pow_str(self.parent()._units[i],-self._powers[i]) for i in pos]
-        if self._num != 1:
-            facts = [par_str(self._num)] + facts
-
-        res = " * ".join(facts)
-        
-        # if pos:
-        #     den = pow_str(self.parent()._units[pos[0]], self._powers[pos[0]])
-        #     for i in pos[1:] :
-        #         den += "*" + pow_str(self.parent()._units[pos[i]], self._powers[pos[i]])
-        #     res = f"{par_str(self._num)}/{par_str(den)}"
-        # else:
-        #     res = f"{self._num}"
+        facts = [ ]
+        if self._denom == 1:
+            res = str(self._num)
+        else:
+            res = "%s/%s" % (par_str(self._num), par_str(self._denom))
 
         import re
         # In case the localization has different names than the original ring,
@@ -138,23 +106,10 @@ class MyLocalizationElement(Element):
         return res
 
     def _latex_(self):
-        tot = sum(self._powers)
-        if tot == 0:
+        if self._denom == 1:
             return latex(self._num)
         else:
-            res = f"\\frac{{{latex(self._num)}}}{{"
-            units = self.parent()._units
-            if tot == 1:
-                res += latex(units[self._powers.index(1)])
-            else:
-                dens = [pow_str_latex(units[i],self._powers[i])
-                        for i in range(len(units)) if self._powers[i] != 0]
-                res += r"\cdot ".join(dens)
-            res += "}"
-            return res
-    
-    def _get_common_den(self,other):
-        return [max(self._powers[i],other._powers[i]) for i in range(len(self._powers))]
+            return "\\frac{%s}{%s}" % (latex(self._num), latex(self._denom))
 
     def __hash__(self):
         r"""
@@ -164,12 +119,12 @@ class MyLocalizationElement(Element):
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
             sage: L = MyLocalization(PP,[xb])
-            sage: elt = L(xb*yb,[4]) 
+            sage: elt = L(xb*yb,[4])
             sage: hash(elt) # random
             211140964612250627
 
         """
-        return hash((self._num,tuple(self._powers)))
+        return hash((self._num, self._denom))
 
     def numerator(self):
         r"""
@@ -195,12 +150,11 @@ class MyLocalizationElement(Element):
             1
             sage: R(4,[2,1]).denominator()
             12
-        
+
         """
-        return prod(self.parent()._units[i]**self._powers[i]
-                    for i in range(len(self.parent()._units)))
-    
-    def _add_(self,other):
+        return self._denom
+
+    def _add_(self, other):
         r"""
 
         EXAMPLES::
@@ -214,13 +168,9 @@ class MyLocalizationElement(Element):
             26/((2)^3*(3)^3)
 
         """
-        res_powers = self._get_common_den(other)
-        units = self.parent()._units
-        res_num = (self._num*prod(units[i]**(res_powers[i]-self._powers[i])
-                                  for i in range(len(units)))
-                   + other._num*prod(units[i]**(res_powers[i]-other._powers[i])
-                                     for i in range(len(units))))
-        return self.parent()(res_num,res_powers)
+        num = self._num * other._denom + self._denom * other._num
+        denom = self._denom * other._denom
+        return self.__class__(self.parent(), num, denom)
 
     def _sub_(self,other):
         r"""
@@ -234,15 +184,10 @@ class MyLocalizationElement(Element):
             -10/((2)*(3))
             sage: R(4,[2,3]) - R(6,[3,2])
             -10/((2)^3*(3)^3)
-        
         """
-        res_powers = self._get_common_den(other)
-        units = self.parent()._units
-        res_num = (self._num*prod(units[i]**(res_powers[i]-self._powers[i])
-                                  for i in range(len(units)))
-                   - other._num*prod(units[i]**(res_powers[i]-other._powers[i])
-                                     for i in range(len(units))))
-        return self.parent()(res_num, res_powers)
+        num = self._num * other._denom - self._denom * other._num
+        denom = self._denom * other._denom
+        return self.__class__(self.parent(), num, denom)
 
     def _mul_(self,other):
         r"""
@@ -256,16 +201,14 @@ class MyLocalizationElement(Element):
             24/((2)*(3))
             sage: R(4,[2,3]) * R(6,[3,2])
             24/((2)^5*(3)^5)
-       
-        
         """
-        res_num = self._num * other._num
-        res_powers = [self._powers[i] + other._powers[i] for i in range(len(self._powers))]
-        return self.parent()(res_num, res_powers)
-    
+        num = self._num * other._num
+        denom = self._denom * other._denom
+        return self.__class__(self.parent(), num, denom)
+
     def _lmul_(self,a):
-        res_num = self._num * a
-        return self.parent()(res_num, self._powers[:])
+        num = self._num * a
+        return self.__class__(self.parent(), num, self._denom)
 
     def is_unit(self):
         r"""
@@ -279,7 +222,7 @@ class MyLocalizationElement(Element):
             True
             sage: L(y).is_unit()
             False
-        
+
             sage: PP.<xx,yy> = P.quotient(x^2)
             sage: L = MyLocalization(PP,[xx])
             sage: L(x).is_unit()
@@ -315,29 +258,20 @@ class MyLocalizationElement(Element):
 
         It is not currently possible to compute the inverse for all units.
         ::
-        
+
             sage: L(6).inverse_of_unit()
             Traceback (most recent call last):
             ...
             NotImplementedError: 
 
         """
-        units = self.parent()._units
-        for i in [1,-1]:
-            num = i*self._num
-            if num == 1:
-                res_num = num
-                res_powers = [0]*len(units)
-                break
-            elif num in units:
-                res_num = i
-                res_powers = [1 if units[i] == num else 0 for i in range(len(units))]
-                break
-        else:
-            raise NotImplementedError
-        for i in range(len(units)):
-            res_num *= units[i]**self._powers[i]
-        return self.parent()(res_num, res_powers)
+        if not self.is_unit():
+            raise ArithmeticError("%s is not invertible" % self)
+        return self.__class__(self.parent(), self._denom, self._num)
+
+    def __invert__(self):
+        K = self.parent().fraction_field()
+        return K(self._denom, self._num)
 
     @coerce_binop
     def __eq__(self,other):
@@ -360,16 +294,15 @@ class MyLocalizationElement(Element):
             True
             sage: L(y) == L(0)
             True
-        
         """
         if not self.parent()._has_equality_test:
             raise TypeError("no equality test in this localization")
-        diff = self.numerator()*other.denominator() - self.denominator()*other.numerator()
+        diff = self._num * other._denom - self._denom * other._num
         return diff in self.parent()._ideal
 
     def _rational_(self):
         # Only if base ring is ZZ
-        if not self.parent()._numring == ZZ:
+        if not self.parent()._numring is ZZ:
             raise ValueError("not a rational")
         else:
             return self.numerator()/self.denominator()
@@ -382,7 +315,7 @@ class MyLocalization(CommutativeRing):
     EXAMPLES:
 
     Integral case::
-    
+
         sage: R = MyLocalization(ZZ,[2,3])
         sage: R._numring
         Integer Ring
@@ -392,7 +325,7 @@ class MyLocalization(CommutativeRing):
         [2, 3]
 
     Localization by a divisor of 0 (not working until saturation in ideals of quotients is implemented)::
-    
+
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
         sage: L = MyLocalization(PP,[xb-yb])
@@ -422,13 +355,17 @@ class MyLocalization(CommutativeRing):
     Element = MyLocalizationElement
 
     def __init__(self, base, units, names=None, normalize=True, category=None):
+        self._numring = base
+        self._units = units = [ base(u) for u in units ]
+
         J = base.ideal(0)
         self._is_ideal_domain = False
-
         try:
             if base in IntegralDomains():
                 self._has_equality_test = True
                 self._is_integral_domain = True
+                if 0 in units:
+                    J = base.ideal([1])
                 if category is None:
                     category = IntegralDomains()
                 else:
@@ -441,25 +378,17 @@ class MyLocalization(CommutativeRing):
         except (AttributeError, NotImplementedError) as e:
             self._has_equality_test = False
 
-        try:
-            _ = base.zero()._floordiv_
-            self._has_simplify = True
-        except AttributeError:
-            self._has_simplify = False
-            
         self._ideal = J
-        self._numring = base
-        self._units = units
-        
+        self._has_floordiv = hasattr(base.zero(), "_floordiv_")
+        self._has_gcd = self._has_floordiv and hasattr(base.zero(), "gcd")
+
         if names is None:
             names = base.variable_names()
         self._assign_names(names)
-        CommutativeRing.__init__(self,base.base_ring(), names=names, normalize=normalize, category=category)
+        CommutativeRing.__init__(self, base.base_ring(), names=names, normalize=normalize, category=category)
         self.register_coercion(base)
 
-        self._gens = tuple(self(v,[0]*len(units)) for v in base.gens())
-
-        
+        self._gens = tuple(self(v) for v in base.gens())
 
     def _repr_(self):
         return f"Localization of {self._numring} at {self._units}"
@@ -469,7 +398,7 @@ class MyLocalization(CommutativeRing):
         invs = [f"\\frac{{1}}{{{latex(u)}}}" for u in self._units]
         s += ", ".join(invs) + r"\right]"
         return s
-    
+
     def ngens(self):
         return self._numring.ngens()
 
@@ -506,8 +435,60 @@ class MyLocalization(CommutativeRing):
         field = self._numring.quotient(self._ideal).fraction_field()
         field.register_coercion(self)
         return field
-        
-    
+
+    def simplify(self):
+        from sage.rings.quotient_ring import quotient_with_simplification
+        R = self._numring
+        try:
+            Rs, f = R.simplify()   # f : R -> Rs
+        except (AttributeError, NotImplementedError):
+            Rs = R
+            f = lambda x: x
+        I = Rs.ideal([ f(x) for x in self._ideal.gens() ])
+        RsI, to_RsI = quotient_with_simplification(Rs, I)
+        try:
+            S, to_S = RsI.simplify()
+            g = lambda x: to_S(to_RsI(f(x)))   # g : R -> S
+        except (AttributeError, NotImplementedError):
+            S = RsI
+            g = lambda x: to_RsI(f(x))         # g : R -> S
+
+        if isinstance(S, MyLocalization):
+            base = S._numring
+            units = S._units + [ f(R(u)).numerator() for u in self._units ]
+            ring = localization_with_simplification(base, units)
+            def isom(x):  # self -> ring
+                num = g(x.numerator())      # in S
+                denom = g(x.denominator())  # in S
+                num2 = num.numerator() * denom.denominator()
+                denom2 = num.denominator() * denom.numerator()
+                return ring(num2) * ring(denom2).inverse_of_unit()
+        else:
+            base = S
+            units = [ g(u) for u in self._units ]
+            ring = localization_with_simplification(base, units)
+            def isom(x):  # self -> ring
+                num = g(x.numerator())      # in S
+                denom = g(x.denominator())  # in S
+                return ring(num) * ring(denom).inverse_of_unit()
+
+        return ring, isom
+
+
+def localization_with_simplification(base, units):
+    simplified_units = [ ]
+    for u in units:
+        try:
+            if not u.is_unit():
+                simplified_units.append(u)
+        except NotImplementedError:
+            simplified_units.append(u)
+    if simplified_units:
+        return MyLocalization(base, simplified_units)
+    else:
+        return base
+
+
 
 class MyLocalizationIdeal_generic(Ideal_generic):
     r"""
@@ -565,42 +546,9 @@ class MyLocalizationIdeal_generic(Ideal_generic):
             if not isinstance(other, (list,tuple)):
                 other = [other]
             other = [R(o).numerator() for o in other]
-            K = S.ideal(other) 
-
+            K = S.ideal(other)
         J, n = I.saturation(K)
         return R.ideal([R(g) for g in J.gens()]), n
 
     def is_prime(self):
         return self.numerator_ideal().is_prime()
-    
-# class MyLocalizationExtension(CommutativeRing):
-#     def __init__(self,base,units):
-#         if isinstance(base, QuotientRing_generic):
-#             R = base.cover_ring()
-#             I = base.defining_ideal()
-#             units_lift = [u.lift() for u in units]
-#             J = I
-#             for u in units_lift:
-#                 J = 
-#         elif isinstance(base, MyLocalization):
-#             R = base.numerator_ring()
-#             U = base.units()
-#             backend = MyLocalization(R,U+units)
-#         else:
-#             backend = MyLocalization(base,units)
-
-
-# P = QQ[("x","y")]
-# P.inject_variables()
-# PP = P.quotient(x*y, names=("xb","yb"))
-# PP.inject_variables()
-# P2 = MyLocalization(PP,[xb], names=("xl","yl","u"))
-# P2.inject_variables()
-
-###
-
-# Z6 = Integers(6)
-# L = MyLocalization(Z6,[ZZ(3)])
-# LL = MyLocalization(L,[ZZ(2)])
-
-#print(L.is_zero())
