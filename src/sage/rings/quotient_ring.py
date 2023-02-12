@@ -1403,11 +1403,11 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             return QuotientRingIdeal_principal
         return QuotientRingIdeal_generic
 
-    def simplify(self):
+    def _flattening_function(self):
         from sage.rings.localized_ring import localization_with_simplification
         R = self.cover_ring()
         try:
-            Rs, f = R.simplify()   # f : R -> Rs
+            Rs, f = R._flattening_function()   # f : R -> Rs
         except (AttributeError, NotImplementedError):
             Rs = R
             f = lambda x: x
@@ -1415,7 +1415,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         if isinstance(Rs, QuotientRing_generic):
             S = Rs.cover_ring()
             K = Rs.defining_ideal() + S.ideal([ x.lift() for x in gens ])
-            ring, to_ring = quotient_with_simplification(K)
+            ring, to_ring = quotient_with_simplification(S, K)
             def isom(x):  # self -> ring
                 xs = f(x.lift())   # in Rs
                 y = xs.list()      # in S
@@ -1425,7 +1425,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             I = Rs.ideal(gens)
             K = I.numerator_ideal()
             SK, to_SK = quotient_with_simplification(S, K)
-            units = [ SK(u) for u in Rs._units ]
+            units = [ to_SK(u) for u in Rs._units ]
             ring = localization_with_simplification(SK, units)
             def isom(x):  # self -> ring
                 xs = f(x.lift())  # in Rs
@@ -1434,14 +1434,23 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
                 return ring(num) * ring(denom).inverse_of_unit()
         else:
             Is = Rs.ideal(gens)
-            ring, to_ring = quotient_with_simplification(Rs, Is)
+            ring, to_ring = quotient_with_simplification(Rs, Is, flatten=False)
             def isom(x):  # self -> ring
                 xs = f(x.lift())
                 return to_ring(xs)
-
         return ring, isom
 
-def quotient_with_simplification(ring, ideal):
+    def flattening_morphism(self):
+        ring, isom = self._flattening_function()
+        im_gens = [ isom(x) for x in self.gens() ]
+        return self._Hom_(ring, category=Rings())(im_gens)
+
+    def flatten(self):
+        ring, _ = self._flattening_function()
+        return ring
+
+
+def quotient_with_simplification(ring, ideal, flatten=True):
     from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
     from sage.rings.polynomial.polynomial_ring import PolynomialRing_general
     from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
@@ -1461,7 +1470,10 @@ def quotient_with_simplification(ring, ideal):
             else:
                 names.append(str(x))
         if subs:
-            A = PolynomialRing(ring.base_ring(), names)
+            if names:
+                A = PolynomialRing(ring.base_ring(), names)
+            else:
+                A = ring.base_ring()
             gens = [ gen.subs(subs) for gen in ideal.gens() ]
             gens = [ gen for gen in gens if gen != 0 ]
             if gens:
@@ -1472,10 +1484,15 @@ def quotient_with_simplification(ring, ideal):
                 return A, lambda x: x.subs(subs)
         else:
             Q = ring.quotient(ideal)
-            return Q, lambda x: Q(x)
     else:
         Q = ring.quotient(ideal)
-        return Q, lambda x: Q(x)
+    if flatten:
+        try:
+            F, f = Q._flattening_function()
+            return F, lambda x: f(Q(x))
+        except:
+            pass
+    return Q, lambda x: Q(x)
 
 
 class QuotientRingIdeal_generic(ideal.Ideal_generic):

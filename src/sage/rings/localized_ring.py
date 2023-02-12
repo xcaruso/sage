@@ -6,6 +6,7 @@ from sage.rings.ring import CommutativeRing, CommutativeRing
 from sage.rings.ideal import Ideal_generic
 
 from sage.categories.homset import Hom
+from sage.categories.rings import Rings
 from sage.rings.morphism import RingHomomorphism
 from sage.rings.homset import RingHomset_generic
 
@@ -288,7 +289,7 @@ class LocalizedRingElement(Element):
         return K(self._denom, self._num)
 
     @coerce_binop
-    def __eq__(self,other):
+    def __eq__(self, other):
         r"""
 
         EXAMPLES::
@@ -313,6 +314,9 @@ class LocalizedRingElement(Element):
             raise TypeError("no equality test in this localization")
         diff = self._num * other._denom - self._denom * other._num
         return diff in self.parent()._ideal
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def _rational_(self):
         # Only if base ring is ZZ
@@ -453,26 +457,25 @@ class LocalizedRing(CommutativeRing):
         field.register_coercion(self)
         return field
 
-    def simplify(self):
+    def _flattening_function(self):
         from sage.rings.quotient_ring import quotient_with_simplification
         R = self._numring
         try:
-            Rs, f = R.simplify()   # f : R -> Rs
+            Rs, f = R._flattening_function()   # f : R -> Rs
         except (AttributeError, NotImplementedError):
             Rs = R
             f = lambda x: x
         I = Rs.ideal([ f(x) for x in self._ideal.gens() ])
         RsI, to_RsI = quotient_with_simplification(Rs, I)
         try:
-            S, to_S = RsI.simplify()
+            S, to_S = RsI._flattening_function()
             g = lambda x: to_S(to_RsI(f(x)))   # g : R -> S
         except (AttributeError, NotImplementedError):
             S = RsI
             g = lambda x: to_RsI(f(x))         # g : R -> S
-
         if isinstance(S, LocalizedRing):
             base = S._numring
-            units = S._units + [ f(R(u)).numerator() for u in self._units ]
+            units = S._units + [ g(R(u)).numerator() for u in self._units ]
             ring = localization_with_simplification(base, units)
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
@@ -488,12 +491,20 @@ class LocalizedRing(CommutativeRing):
                 num = g(x.numerator())      # in S
                 denom = g(x.denominator())  # in S
                 return ring(num) * ring(denom).inverse_of_unit()
-
         return ring, isom
+
+    def flattening_morphism(self):
+        ring, isom = self._flattening_function()
+        im_gens = [ isom(x) for x in self.gens() ]
+        return self._Hom_(ring, category=Rings())(im_gens)
+
+    def flatten(self):
+        ring, _ = self._flattening_function()
+        return ring
+
 
     def _Hom_(self, other, category):
         return RingHomset_localized(self, other, category=category)
-
 
 
 def localization_with_simplification(base, units):
@@ -510,11 +521,7 @@ def localization_with_simplification(base, units):
         return base
 
 
-
 class LocalizedRingIdeal_generic(Ideal_generic):
-    r"""
-    """
-
     @cached_method
     def numerator_ideal(self):
         r"""
@@ -556,7 +563,7 @@ class LocalizedRingIdeal_generic(Ideal_generic):
         return elt.numerator() in self.numerator_ideal()
 
     def is_zero(self):
-        return all(self.gens() == 0)
+        return all([ x == 0 for x in self.gens() ])
 
     def is_one(self):
         return self.numerator_ideal().is_one()
@@ -599,18 +606,18 @@ class LocalizedRingMorphism(RingHomomorphism):
     def numerator_morphism(self):
         return self._numerator_morphism
 
+    @cached_method
+    def im_gens(self):
+        return [ self(x) for x in self.domain().gens() ]
+
     def _call_(self, x):
         f = self._numerator_morphism
         num = x.numerator()
         denom = x.denominator()
         return f(num) * f(denom).inverse_of_unit()
 
-    def _repr_(self):
-        s = RingHomomorphism._repr_(self)
-        d = self._numerator_morphism._repr_defn()
-        if d != '':
-            s += "\n  Defn: " + '\n        '.join(d.split('\n'))
-        return s
+    def _repr_defn(self):
+        return self._numerator_morphism._repr_defn()
 
 
 class RingHomset_localized(RingHomset_generic):
