@@ -416,7 +416,6 @@ class LocalizedRing(CommutativeRing):
         xb * xb^-1
 
     """
-
     Element = LocalizedRingElement
 
     def __init__(self, base, units, names=None, normalize=True, category=None):
@@ -454,6 +453,10 @@ class LocalizedRing(CommutativeRing):
         self.register_coercion(base)
 
         self._gens = tuple(self(v) for v in base.gens())
+
+    def _element_constructor_(self, *args, **kwds):
+        kwds['check'] = True
+        return self.element_class(self, *args, **kwds)
 
     def _repr_(self):
         return f"Localization of {self._numring} at {self._units}"
