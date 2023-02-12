@@ -1418,7 +1418,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             ring, to_ring = quotient_with_simplification(S, K)
             def isom(x):  # self -> ring
                 xs = f(x.lift())   # in Rs
-                y = xs.list()      # in S
+                y = xs.lift()      # in S
                 return to_ring(y)
         elif isinstance(Rs, LocalizedRing):
             S = Rs.numerator_ring()
