@@ -25,7 +25,7 @@ def par_str(a):
 
 
 class LocalizedRingElement(Element):
-    def __init__(self, parent, *x, simplify=True):
+    def __init__(self, parent, *x, simplify=True, check=True):
         r"""
 
         EXAMPLES:
@@ -62,6 +62,7 @@ class LocalizedRingElement(Element):
                 try:
                     num = R(x)
                     denom = R.one()
+                    check = False
                 except (TypeError, ZeroDivisionError):
                     try:
                         num = R(x.numerator())
@@ -73,7 +74,7 @@ class LocalizedRingElement(Element):
             denom = R(x[1])
         else:
             raise TypeError
-        if not (denom.is_one() or parent.ideal(denom).is_one()):
+        if check and not parent.ideal(denom).is_one():
             raise ArithmeticError("denominator is a unit")
 
         if num.is_zero():
@@ -124,7 +125,6 @@ class LocalizedRingElement(Element):
             (xl + yl)^-1
             sage: x
             x
-        
         """
         facts = [ ]
         if self._denom == 1:
@@ -175,7 +175,7 @@ class LocalizedRingElement(Element):
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
             sage: L = PP.localization([xb])
-            sage: elt = L(xb*yb,[4]) 
+            sage: elt = L(xb*yb,[4])
             sage: hash(elt) # random
             211140964612250627
 
@@ -206,7 +206,6 @@ class LocalizedRingElement(Element):
             1
             sage: R(4,[2,1]).denominator()
             3
-        
         """
         return self._denom
 
@@ -226,7 +225,7 @@ class LocalizedRingElement(Element):
         """
         num = self._num * other._denom + self._denom * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _sub_(self,other):
         r"""
@@ -240,11 +239,10 @@ class LocalizedRingElement(Element):
             -5 * 3^-1
             sage: R(4,[2,3]) - R(6,[3,2])
             -5 * 2^-2 * 3^-3
-        
         """
         num = self._num * other._denom - self._denom * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _mul_(self,other):
         r"""
@@ -258,16 +256,14 @@ class LocalizedRingElement(Element):
             4
             sage: R(4,[2,3]) * R(6,[3,2])
             2^-2 * 3^-4
-       
-        
         """
         num = self._num * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _lmul_(self,a):
         num = self._num * a
-        return self.__class__(self.parent(), num, self._denom)
+        return self.__class__(self.parent(), num, self._denom, check=False)
 
     def is_unit(self):
         r"""
@@ -320,7 +316,7 @@ class LocalizedRingElement(Element):
         Because checking whether an element is a unit can be expensive, outside
         of known cases, the method always fails with NotImplementedError.
         ::
-        
+
             sage: L(5).inverse_of_unit()
             Traceback (most recent call last):
             ...
@@ -329,7 +325,7 @@ class LocalizedRingElement(Element):
         """
         if not self.is_unit():
             raise ArithmeticError("%s is not invertible" % self)
-        return self.__class__(self.parent(), self._denom, self._num)
+        return self.__class__(self.parent(), self._denom, self._num, check=False)
 
     def __invert__(self):
         K = self.parent().fraction_field()
@@ -383,7 +379,7 @@ class LocalizedRing(CommutativeRing):
     EXAMPLES:
 
     Integral case::
-    
+
         sage: R = ZZ.localization([2,3])
         sage: R._numring
         Integer Ring
