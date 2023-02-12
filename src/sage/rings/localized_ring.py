@@ -66,8 +66,6 @@ class LocalizedRingElement(Element):
                     try:
                         num = R(x.numerator())
                         denom = R(x.denominator())
-                        if not parent.ideal(denom).is_one():
-                            raise ValueError("denominator is not invertible")
                     except (TypeError, AttributeError):
                         raise ValueError("unable to map %s to %s" % (x, parent))
         elif len(x) == 2:
@@ -75,6 +73,8 @@ class LocalizedRingElement(Element):
             denom = R(x[1])
         else:
             raise TypeError
+        if not (denom.is_one() or parent.ideal(denom).is_one()):
+            raise ArithmeticError("denominator is a unit")
 
         if num.is_zero():
             denom = R.one()
