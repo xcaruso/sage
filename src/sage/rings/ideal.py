@@ -1687,20 +1687,23 @@ class Ideal_pid(Ideal_principal):
             return ZZ.residue_field(self, check = False)
         raise NotImplementedError("residue_field() is only implemented for ZZ and rings of integers of number fields.")
 
-    def saturation(self,other):
-        if not isinstance(other, Ideal_pid):
-            raise NotImplementedError
-        first = True
+    def saturation(self, other):
+        R = self.ring()
+        if isinstance(other, Ideal_generic):
+            if other.ring() is not R:
+                other = other.change_ring(R)
+            other = other.gen()
+        ogen = R(other)
         res = self.gen()
-        g = self.gen().gcd(other.gen())
+        g = res.gcd(ogen)
         n = 0
         if g.is_unit():
             return self, n
         while g.divides(res):
             res //= g
             n += 1
-        return self.ring().ideal(res), n
-            
+        return R.ideal(res), n
+
 
 class Ideal_fractional(Ideal_generic):
     """

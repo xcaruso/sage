@@ -239,6 +239,7 @@ from sage.interfaces.magma import magma as magma_default
 from sage.interfaces.expect import StdOutContext
 
 from sage.rings.ideal import Ideal_generic
+from sage.rings.quotient_ring import QuotientRingIdeal_generic
 from sage.rings.noncommutative_ideals import Ideal_nc
 from sage.rings.integer import Integer
 from sage.structure.sequence import Sequence
@@ -5434,7 +5435,7 @@ class MPolynomialIdeal( MPolynomialIdeal_singular_repr, \
         return result_ring.ideal(result)
 
 
-class MPolynomialIdeal_quotient(MPolynomialIdeal):
+class MPolynomialIdeal_quotient(QuotientRingIdeal_generic, MPolynomialIdeal):
     r"""
     An ideal in a quotient of a multivariate polynomial ring.
 
@@ -5551,15 +5552,3 @@ class MPolynomialIdeal_quotient(MPolynomialIdeal):
                 return not (contained and contains)
             else:  # remaining case <
                 return contained and not contains
-
-    def saturation(self, other):
-        Q = self.ring()
-        R = Q.cover_ring()
-        J = R.ideal(Q.defining_ideal().gens() + [g.lift() for g in self.gens()])
-        if other in Q:
-            K = R.ideal([other.lift()])
-        else:
-            K = R.ideal([g.lift() for g in other.gens()])
-        sat,n = J.saturation(K)
-        return (Q.ideal([Q(s) for s in sat.gens()]),n)
-        
