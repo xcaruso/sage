@@ -34,7 +34,7 @@ def normalize_extra_units(base_ring, add_units, warning=True):
     return tuple([ base_ring(u) for u in add_units ])
 
 class LocalizedRingElement(Element):
-    def __init__(self, parent, *x, simplify=True):
+    def __init__(self, parent, *x, simplify=True, check=True):
         r"""
 
         EXAMPLES:
@@ -69,6 +69,7 @@ class LocalizedRingElement(Element):
                 try:
                     num = R(x)
                     denom = R.one()
+                    check = False
                 except (TypeError, ZeroDivisionError):
                     try:
                         num = R(x.numerator())
@@ -80,7 +81,7 @@ class LocalizedRingElement(Element):
             denom = R(x[1])
         else:
             raise TypeError
-        if not (denom.is_one() or parent.ideal(denom).is_one()):
+        if check and not parent.ideal(denom).is_one():
             raise ArithmeticError("denominator is a unit")
 
         if num.is_zero():
@@ -131,7 +132,6 @@ class LocalizedRingElement(Element):
             1/(xl + yl)
             sage: x
             x
-        
         """
         facts = [ ]
         R = self.parent()
@@ -189,7 +189,11 @@ class LocalizedRingElement(Element):
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
             sage: L = PP.localization([xb])
+<<<<<<< HEAD
             sage: elt = L(xb*yb,xb^4) 
+=======
+            sage: elt = L(xb*yb,[4])
+>>>>>>> xavier/localization
             sage: hash(elt) # random
             211140964612250627
             sage: dict = {elt} # indirect_doctest
@@ -223,7 +227,6 @@ class LocalizedRingElement(Element):
             1
             sage: R(4,2^2*3).denominator()
             3
-        
         """
         return self._denom
 
@@ -243,7 +246,7 @@ class LocalizedRingElement(Element):
         """
         num = self._num * other._denom + self._denom * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _sub_(self,other):
         r"""
@@ -253,15 +256,22 @@ class LocalizedRingElement(Element):
             sage: R = ZZ.localization([2,3])
             sage: R(4,1) - R(6,1)
             -2
+<<<<<<< HEAD
             sage: R(4,3) - R(6,2)
             -5/3
             sage: R(4,2^2*3^3) - R(6,2^3*3^2)
             -5/108
 
+=======
+            sage: R(4,[0,1]) - R(6,[1,0])
+            -5 * 3^-1
+            sage: R(4,[2,3]) - R(6,[3,2])
+            -5 * 2^-2 * 3^-3
+>>>>>>> xavier/localization
         """
         num = self._num * other._denom - self._denom * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _mul_(self,other):
         r"""
@@ -273,17 +283,22 @@ class LocalizedRingElement(Element):
             24
             sage: R(4,3) * R(6,2)
             4
+<<<<<<< HEAD
             sage: R(4,2^2*3^3) * R(6,2^3*3^2)
             1/324
         
+=======
+            sage: R(4,[2,3]) * R(6,[3,2])
+            2^-2 * 3^-4
+>>>>>>> xavier/localization
         """
         num = self._num * other._num
         denom = self._denom * other._denom
-        return self.__class__(self.parent(), num, denom)
+        return self.__class__(self.parent(), num, denom, check=False)
 
     def _lmul_(self,a):
         num = self._num * a
-        return self.__class__(self.parent(), num, self._denom)
+        return self.__class__(self.parent(), num, self._denom, check=False)
 
     def is_unit(self):
         r"""
@@ -325,7 +340,18 @@ class LocalizedRingElement(Element):
             sage: a.inverse_of_unit()
             2
             sage: L(6).inverse_of_unit()
+<<<<<<< HEAD
             1/6
+=======
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: Unable to invert that element
+
+        Because checking whether an element is a unit can be expensive, outside
+        of known cases, the method always fails with NotImplementedError.
+        ::
+
+>>>>>>> xavier/localization
             sage: L(5).inverse_of_unit()
             Traceback (most recent call last):
             ...
@@ -334,7 +360,7 @@ class LocalizedRingElement(Element):
         """
         if not self.is_unit():
             raise ArithmeticError("%s is not invertible" % self)
-        return self.__class__(self.parent(), self._denom, self._num)
+        return self.__class__(self.parent(), self._denom, self._num, check=False)
 
     def __invert__(self):
         K = self.parent().fraction_field()
@@ -388,9 +414,14 @@ class LocalizedRing(CommutativeRing):
     EXAMPLES:
 
     Integral case::
+<<<<<<< HEAD
     
         sage: R = ZZ.localization([2,3]); R
         Integer Ring localized at (2, 3)
+=======
+
+        sage: R = ZZ.localization([2,3])
+>>>>>>> xavier/localization
         sage: R._numring
         Integer Ring
         sage: R._ideal
@@ -428,7 +459,6 @@ class LocalizedRing(CommutativeRing):
         xb/xb
 
     """
-
     Element = LocalizedRingElement
 
     def __init__(self, base, units, names=None, normalize=True, category=None):
@@ -466,6 +496,10 @@ class LocalizedRing(CommutativeRing):
         self.register_coercion(base)
 
         self._gens = tuple(self(v) for v in base.gens())
+
+    def _element_constructor_(self, *args, **kwds):
+        kwds['check'] = True
+        return self.element_class(self, *args, **kwds)
 
     def _repr_(self):
         r"""
