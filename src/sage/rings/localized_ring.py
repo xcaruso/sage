@@ -189,11 +189,7 @@ class LocalizedRingElement(Element):
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2*y)
             sage: L = PP.localization([xb])
-<<<<<<< HEAD
-            sage: elt = L(xb*yb,xb^4) 
-=======
-            sage: elt = L(xb*yb,[4])
->>>>>>> xavier/localization
+            sage: elt = L(xb*yb,xb^4)
             sage: hash(elt) # random
             211140964612250627
             sage: dict = {elt} # indirect_doctest
@@ -256,18 +252,10 @@ class LocalizedRingElement(Element):
             sage: R = ZZ.localization([2,3])
             sage: R(4,1) - R(6,1)
             -2
-<<<<<<< HEAD
             sage: R(4,3) - R(6,2)
             -5/3
             sage: R(4,2^2*3^3) - R(6,2^3*3^2)
             -5/108
-
-=======
-            sage: R(4,[0,1]) - R(6,[1,0])
-            -5 * 3^-1
-            sage: R(4,[2,3]) - R(6,[3,2])
-            -5 * 2^-2 * 3^-3
->>>>>>> xavier/localization
         """
         num = self._num * other._denom - self._denom * other._num
         denom = self._denom * other._denom
@@ -283,14 +271,8 @@ class LocalizedRingElement(Element):
             24
             sage: R(4,3) * R(6,2)
             4
-<<<<<<< HEAD
             sage: R(4,2^2*3^3) * R(6,2^3*3^2)
             1/324
-        
-=======
-            sage: R(4,[2,3]) * R(6,[3,2])
-            2^-2 * 3^-4
->>>>>>> xavier/localization
         """
         num = self._num * other._num
         denom = self._denom * other._denom
@@ -340,18 +322,7 @@ class LocalizedRingElement(Element):
             sage: a.inverse_of_unit()
             2
             sage: L(6).inverse_of_unit()
-<<<<<<< HEAD
             1/6
-=======
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: Unable to invert that element
-
-        Because checking whether an element is a unit can be expensive, outside
-        of known cases, the method always fails with NotImplementedError.
-        ::
-
->>>>>>> xavier/localization
             sage: L(5).inverse_of_unit()
             Traceback (most recent call last):
             ...
@@ -410,18 +381,12 @@ class LocalizedRingElement(Element):
 class LocalizedRing(CommutativeRing):
     r"""
 
-
     EXAMPLES:
 
     Integral case::
-<<<<<<< HEAD
-    
+
         sage: R = ZZ.localization([2,3]); R
         Integer Ring localized at (2, 3)
-=======
-
-        sage: R = ZZ.localization([2,3])
->>>>>>> xavier/localization
         sage: R._numring
         Integer Ring
         sage: R._ideal
@@ -444,7 +409,7 @@ class LocalizedRing(CommutativeRing):
 
         sage: L = PP.localization([xb-yb^2]); L
         Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (-yb^2 + xb,)
-        sage: L._ideal 
+        sage: L._ideal
         Ideal (0) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2)
         sage: L._units
         (-yb^2 + xb,)
