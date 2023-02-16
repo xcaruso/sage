@@ -376,8 +376,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
             sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
-            sage: phi.frobenius_charpoly_crystalline('V')
-            x^11 + (z3^2 + 2*z3)*x^10 + ((z3 + 1)*V + z3)*x^9 + ((2*z3^2 + z3 + 2)*V^2 + (2*z3^2 + z3 + 1)*V + 2*z3^2 + z3 + 2)*x^8 + ((z3^2 + z3)*V^3 + 2*z3^2*V^2 + (2*z3^2 + z3 + 2)*V + 1)*x^7 + ((z3^2 + 2*z3)*V^4 + (2*z3^2 + 2*z3)*V^3 + (z3^2 + 1)*V^2 + (z3^2 + 1)*V + z3^2 + z3 + 2)*x^6 + ((z3^2 + z3)*V^5 + (z3^2 + 1)*V^4 + (z3^2 + 1)*V^3 + (z3^2 + 2*z3 + 1)*V^2 + (z3^2 + 2)*V + z3^2 + 2*z3 + 1)*x^5 + ((z3^2 + z3 + 1)*V^6 + (z3^2 + 2*z3 + 1)*V^5 + (2*z3^2 + z3)*V^4 + (z3^2 + 2)*V^2 + (2*z3^2 + 2*z3)*V + z3^2 + 1)*x^4 + (2*z3*V^7 + 2*z3^2*V^6 + (z3^2 + z3)*V^5 + (2*z3 + 2)*V^4 + 2*z3*V^3 + (z3 + 2)*V^2 + z3^2*V + z3^2 + 2*z3 + 1)*x^3 + (2*z3*V^8 + (z3^2 + z3)*V^7 + (2*z3^2 + z3 + 2)*V^6 + (z3^2 + 2)*V^5 + V^4 + (2*z3^2 + 2)*V^3 + (z3^2 + z3 + 1)*V^2 + (z3 + 2)*V + 2*z3^2 + z3 + 1)*x^2 + (2*z3*V^9 + z3*V^8 + (z3^2 + z3 + 1)*V^7 + V^6 + (z3^2 + 2*z3 + 2)*V^5 + (z3^2 + 2*z3 + 1)*V^4 + V^3 + (2*z3^2 + z3 + 2)*V^2 + V + 2*z3^2 + z3)*x + z3*V^10 + (z3^2 + z3)*V^9 + (2*z3^2 + 1)*V^8 + (2*z3^2 + 2*z3)*V^7 + z3*V^6 + (z3^2 + 2*z3 + 2)*V^5 + V^4 + z3*V^3 + (z3^2 + 1)*V^2 + (2*z3^2 + 2*z3 + 2)*V + z3^2
+            sage: phi.frobenius_charpoly_crystalline()
+            X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + (2*z3^2 + z3 + 1)*T + 2*z3^2 + z3 + 2)*X^8 + ((z3^2 + z3)*T^3 + 2*z3^2*T^2 + (2*z3^2 + z3 + 2)*T + 1)*X^7 + ((z3^2 + 2*z3)*T^4 + (2*z3^2 + 2*z3)*T^3 + (z3^2 + 1)*T^2 + (z3^2 + 1)*T + z3^2 + z3 + 2)*X^6 + ((z3^2 + z3)*T^5 + (z3^2 + 1)*T^4 + (z3^2 + 1)*T^3 + (z3^2 + 2*z3 + 1)*T^2 + (z3^2 + 2)*T + z3^2 + 2*z3 + 1)*X^5 + ((z3^2 + z3 + 1)*T^6 + (z3^2 + 2*z3 + 1)*T^5 + (2*z3^2 + z3)*T^4 + (z3^2 + 2)*T^2 + (2*z3^2 + 2*z3)*T + z3^2 + 1)*X^4 + (2*z3*T^7 + 2*z3^2*T^6 + (z3^2 + z3)*T^5 + (2*z3 + 2)*T^4 + 2*z3*T^3 + (z3 + 2)*T^2 + z3^2*T + z3^2 + 2*z3 + 1)*X^3 + (2*z3*T^8 + (z3^2 + z3)*T^7 + (2*z3^2 + z3 + 2)*T^6 + (z3^2 + 2)*T^5 + T^4 + (2*z3^2 + 2)*T^3 + (z3^2 + z3 + 1)*T^2 + (z3 + 2)*T + 2*z3^2 + z3 + 1)*X^2 + (2*z3*T^9 + z3*T^8 + (z3^2 + z3 + 1)*T^7 + T^6 + (z3^2 + 2*z3 + 2)*T^5 + (z3^2 + 2*z3 + 1)*T^4 + T^3 + (2*z3^2 + z3 + 2)*T^2 + T + 2*z3^2 + z3)*X + z3*T^10 + (z3^2 + z3)*T^9 + (2*z3^2 + 1)*T^8 + (2*z3^2 + 2*z3)*T^7 + z3*T^6 + (z3^2 + 2*z3 + 2)*T^5 + T^4 + z3*T^3 + (z3^2 + 1)*T^2 + (2*z3^2 + 2*z3 + 2)*T + z3^2
 
         ALGORITHM:
 
@@ -403,7 +403,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         dm = self.coefficients(sparse=False)
         rec_coeffs = [dm[i]/dm[r] for i in range(r)]
 
-        S = PolynomialRing(L, name=var)
+        S = PolynomialRing(L, name=str(self._function_ring.gen()))
         SM = MatrixSpace(S, r, r)
         mu = (S.gen() - dm[0])**precision
         mu_coeffs = mu.coefficients(sparse=False)
