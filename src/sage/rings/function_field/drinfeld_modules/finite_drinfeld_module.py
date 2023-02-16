@@ -346,7 +346,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         for i in range(r):
             char_poly.append([sol_Fq[block_shifts[i] 
                 + j] for j in range(shifts[i])])
-        return PolynomialRing(self._function_ring, var)(char_poly + [1])
+        return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
 
 
     def frobenius_charpoly_crystalline(self, var = 'X'):
@@ -428,7 +428,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return M
         reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
-        return (prod(reduced_companions)*C*C0).charpoly()
+        return (prod(reduced_companions)*C*C0).charpoly(var)
 
 
         
