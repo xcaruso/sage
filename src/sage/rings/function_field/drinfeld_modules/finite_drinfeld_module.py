@@ -305,7 +305,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         Fq = self._Fq
         L = self.category().base_over_constants_field()
+        A = self.function_ring()
         q = Fq.cardinality()
+        T = A.gen()
         r,n = self.rank(), L.degree(Fq)
         # Compute constants that determine the block structure of the 
         # linear system. TODO: Remove the magic behind this by making 
@@ -321,18 +323,18 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # should either be moved elsewhere or slower methods 
         # should be used.
         gen_powers = [[1], self.coefficients(sparse=False)] \
-                     + [[0 for _ in range(r*i + 1)] for i in range(2, n + 1)]
-        for i in range(2, n + 1):
-            for j in range(r*i + 1):
+                     + [self(T**i).coefficients(sparse=False) for i in range(2, n + 1)]
+        #for i in range(2, n + 1):
+        #    for j in range(r*i + 1):
                 # low_deg: lowest degree term of \phi_x contributing 
                 # to the skew degree term of \tau^j.
                 # high_deg: Highest degree term of \phi_x contributing
                 # to the skew degree term of \tau^j.
-                low_deg, high_deg = max(j - r*(i-1), 0), min(r, j)
-                recs = [gen_powers[i-1][j - k]**(q**k) for k in \
-                                        range(low_deg, high_deg + 1)]
-                gen_powers[i][j] = sum([a*b for a, b in zip(
-                    gen_powers[1][low_deg:high_deg + 1], recs)])
+        #        low_deg, high_deg = max(j - r*(i-1), 0), min(r, j)
+        #        recs = [gen_powers[i-1][j - k]**(q**k) for k in \
+        #                                range(low_deg, high_deg + 1)]
+        #        gen_powers[i][j] = sum([a*b for a, b in zip(
+        #            gen_powers[1][low_deg:high_deg + 1], recs)])
         sys, rhs = Matrix(L, rows, cols), vector(L, rows)
         rhs[rows - 1] = -1
         for j in range(r):
