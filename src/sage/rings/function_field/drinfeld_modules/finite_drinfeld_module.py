@@ -300,8 +300,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         ALGORITHM:
 
             Construct a linear system based on the requirement that
-            the Frobenius satisfies a degree r polynomial with 
-            coefficients in the regular function ring. 
+            the Frobenius satisfies a degree r polynomial with
+            coefficients in the function ring.
         """
         Fq = self._Fq
         L = self.category().base_over_constants_field()
@@ -309,32 +309,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
         q = Fq.cardinality()
         T = A.gen()
         r,n = self.rank(), L.degree(Fq)
-        # Compute constants that determine the block structure of the 
-        # linear system. TODO: Remove the magic behind this by making 
-        # the logical structure clearer.
+        # Compute constants that determine the block structure of the
+        # linear system.
         shifts = [(n*(r - i))//r + 1 for i in range(r)]
         rows, cols = n*r + 1, sum(shifts)
         block_shifts = [0]
         for i in range(r-1):
             block_shifts.append(block_shifts[-1] + shifts[i])
         # Compute the images \phi_T^i for i = 2 .. n.
-        # We could alternatively use phi(T) to do this. 
-        # This probably shouldn't be here; this functionality
-        # should either be moved elsewhere or slower methods 
-        # should be used.
         gen_powers = [[1], self.coefficients(sparse=False)] \
                      + [self(T**i).coefficients(sparse=False) for i in range(2, n + 1)]
-        #for i in range(2, n + 1):
-        #    for j in range(r*i + 1):
-                # low_deg: lowest degree term of \phi_x contributing 
-                # to the skew degree term of \tau^j.
-                # high_deg: Highest degree term of \phi_x contributing
-                # to the skew degree term of \tau^j.
-        #        low_deg, high_deg = max(j - r*(i-1), 0), min(r, j)
-        #        recs = [gen_powers[i-1][j - k]**(q**k) for k in \
-        #                                range(low_deg, high_deg + 1)]
-        #        gen_powers[i][j] = sum([a*b for a, b in zip(
-        #            gen_powers[1][low_deg:high_deg + 1], recs)])
         sys, rhs = Matrix(L, rows, cols), vector(L, rows)
         rhs[rows - 1] = -1
         for j in range(r):
@@ -342,11 +326,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 for i in range(len(gen_powers[k])):
                     sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
         sol = list(sys.solve_right(rhs))
-        sol_Fq = list(map(lambda x: 
+        sol_Fq = list(map(lambda x:
             self.base_over_constants_field()(x).vector()[0], sol))
         char_poly = []
         for i in range(r):
-            char_poly.append([sol_Fq[block_shifts[i] 
+            char_poly.append([sol_Fq[block_shifts[i]
                 + j] for j in range(shifts[i])])
         return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
 
@@ -397,14 +381,13 @@ class FiniteDrinfeldModule(DrinfeldModule):
         r, n = self.rank(), L.degree(Fq)
         # Precision can be lowered to (n + 1)/m.
         # where m is the degree of the A-characteristic.
-        # This requires additional computation. 
+        # This requires additional computation.
         # Computing to precision n + 1 avoids this.
-        precision = n + 1 
+        precision = n + 1
         nstar = ceil(sqrt(n))
         n1, n0 = n // nstar, n % nstar
         dm = self.coefficients(sparse=False)
         rec_coeffs = [dm[i]/dm[r] for i in range(r)]
-
         S = PolynomialRing(L, name=str(self._function_ring.gen()))
         SM = MatrixSpace(S, r, r)
         mu = (S.gen() - dm[0])**precision
