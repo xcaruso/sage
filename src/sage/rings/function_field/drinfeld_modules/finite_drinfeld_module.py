@@ -403,6 +403,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         C = prod([companion(i) for i in range(nstar + n0, n0, -1)])
         moduli = [S([ c**(q**(-i*nstar % n)) for c in mu_coeffs]) \
                                             for i in range(1, n1) ]
+
         def reduce_and_frobenius(order, modulus):
             M = Matrix(S, r, r)
             for i, row in enumerate(C):
