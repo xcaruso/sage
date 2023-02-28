@@ -191,11 +191,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
         deg = self._base.over(Fq).degree(Fq)
         return self._Hom_(self, category=self.category())(t**deg)
 
-    def frobenius_charpoly(self, var='X'):
+    def frobenius_charpoly(self, var='X', algorithm = 'crystalline'):
         r"""
         Return the characteristic polynomial of the Frobenius
-        endomorphism if the rank is two. Raise a NotImplementedError
-        otherwise.
+        endomorphism.
 
         Let `\mathbb{F}_q` be the base field of the function ring. The
         *characteristic polynomial `\chi` of the Frobenius endomorphism*
@@ -257,21 +256,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ALGORITHM:
 
-            We compute the Frobenius norm, and with it the Frobenius
-            trace. This gives the Frobenius characteristic polynomial.
-            See [MS2019]_, Section 4.
-
-            See docstrings of methods :meth:`frobenius_norm` and
-            :meth:`frobenius_trace` for further details on the
-            computation of the norm and of the trace.
+            This wrapper dispatches the characteristic polynomial
+            computation to the method implementing the corresponding
+            algorithm. By default chooses the 'crystalline' algorithm.
+            See the corresponding docstring for each method for details.
         """
-        self._check_rank_two()
-        A = self._function_ring  # Fq[T]
-        S = PolynomialRing(A, name=var)  # Fq[T][X]
-        # Does not work when Fq is not a prime field...
-        # chi = self._gen.reduced_charpoly()
-        # return -chi(A.gen(), S.gen())
-        return S([self.frobenius_norm(), -self.frobenius_trace(), 1])
+        algorithms = {'gekeler', 'crystalline'}
+        if algorithm in algorithms:
+            return getattr(self, \
+                    f'{self.frobenius_charpoly.__name__}_{algorithm}')(var)
+        raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
 
     def frobenius_charpoly_gekeler(self, var = 'X'):
         r"""
@@ -279,9 +273,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
         endomorphism for any rank if the minimal polynomial is
         equal to the characteristic polynomial. Currently only
         works for Drinfeld modules defined over Fq[T].
+
+        WARNING: This algorithm only works in the "generic" case
+                 when the corresponding linear system is invertible.
+                 Notable cases where this fails include Drinfeld
+                 modules whose minimal polynomial is not equal to
+                 the characteristic polynomial, and rank 2 Drinfeld
+                 modules where the degree 1 coefficient of \phi_T is
+                 0.
         
-        See [Gek2008]_ for the rank two version
-        of this algorithm.
+        See [Gek2008]_ for the rank two version of this algorithm.
 
         INPUT: (default: ``'X'``) the name of the second variable
 
@@ -310,7 +311,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         T = A.gen()
         r,n = self.rank(), L.degree(Fq)
         # Compute constants that determine the block structure of the
-        # linear system.
+        # linear system. The system is prepared such that the solution
+        # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
+        # corresponding to a block of length (n*(r - i))//r + 1
         shifts = [(n*(r - i))//r + 1 for i in range(r)]
         rows, cols = n*r + 1, sum(shifts)
         block_shifts = [0]
@@ -325,7 +328,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
             for k in range(shifts[j]):
                 for i in range(len(gen_powers[k])):
                     sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
+        #if sys.is_invertible():
         sol = list(sys.solve_right(rhs))
+        #else:
+        #    raise ValueError("Can't solve system for characteristic polynomial")
+        # The system is solved over L, but the coefficients should all lie in Fq
+        # We project back into Fq here.
         sol_Fq = list(map(lambda x:
             self.base_over_constants_field()(x).vector()[0], sol))
         char_poly = []
@@ -355,8 +363,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
-            sage: phi.frobenius_charpoly_crystalline('V')
-            x^10 + x^9 + (3*V + z2 + 1)*x^8 + (-V^2 + z2*V + 2*z2 + 1)*x^7 + (-V^3 + (z2 + 2)*V^2 + (4*z2 + 2)*V - 1)*x^6 + (3*V^4 + V^3 + 3*z2*V + 3*z2 + 3)*x^5 + ((4*z2 + 2)*V^4 + (3*z2 + 4)*V^3 + 3*V^2 + (2*z2 + 4)*V + 4*z2 + 1)*x^4 + (3*V^5 + (2*z2 + 3)*V^4 - V^3 + (2*z2 + 2)*V^2 + (z2 + 3)*V + 4*z2)*x^3 + (3*V^6 + (3*z2 + 2)*V^5 + (4*z2 + 1)*V^4 + z2*V^3 + (4*z2 + 4)*V^2 + 4*z2*V)*x^2 + (2*V^7 + 3*V^6 + 2*z2*V^5 + (2*z2 + 3)*V^4 + (4*z2 + 3)*V^3 + (z2 + 2)*V^2 + (z2 + 4)*V + 2*z2 + 2)*x + V^8 + (4*z2 + 3)*V^6 + (4*z2 + 4)*V^4 + 4*z2*V^2 + (z2 + 2)*V + z2
+            sage: phi.frobenius_charpoly_crystalline()
+            X^10 + X^9 + (3*T + z2 + 1)*X^8 + (-T^2 + z2*T + 2*z2 + 1)*X^7 + (-T^3 + (z2 + 2)*T^2 + (4*z2 + 2)*T - 1)*X^6 + (3*T^4 + T^3 + 3*z2*T + 3*z2 + 3)*X^5 + ((4*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + 3*T^2 + (2*z2 + 4)*T + 4*z2 + 1)*X^4 + (3*T^5 + (2*z2 + 3)*T^4 - T^3 + (2*z2 + 2)*T^2 + (z2 + 3)*T + 4*z2)*X^3 + (3*T^6 + (3*z2 + 2)*T^5 + (4*z2 + 1)*T^4 + z2*T^3 + (4*z2 + 4)*T^2 + 4*z2*T)*X^2 + (2*T^7 + 3*T^6 + 2*z2*T^5 + (2*z2 + 3)*T^4 + (4*z2 + 3)*T^3 + (z2 + 2)*T^2 + (z2 + 4)*T + 2*z2 + 2)*X + T^8 + (4*z2 + 3)*T^6 + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
             
             sage: Fq = GF(27)
             sage: A.<T> = Fq[]
@@ -415,6 +423,31 @@ class FiniteDrinfeldModule(DrinfeldModule):
         reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
         return (prod(reduced_companions)*C*C0).charpoly(var)
+
+    def validate_charpoly(self, poly):
+        r"""
+        Check whether a polynomial is satisfied by the Frobenius endomorphism.
+        In practice, this is used to validate the output of methods to compute
+        the characteristic polynomial.
+
+        INPUT: A polynomial with coefficients in the regular function ring.
+
+        OUTPUT: True if the Frobenius satisfies the polynomial, and False
+                otherwise.
+
+        EXAMPLES::
+
+        """
+        A = self.function_ring()
+        L = self.category().base_over_constants_field()
+        t = self.ore_polring().gen()
+        n = L.degree(self._Fq)
+        coeffs = poly.coefficients(sparse=False)
+        coeffs = list(map(lambda coeff:\
+                A(list(map(lambda x:\
+                self.base_over_constants_field()(x).vector()[0], coeff))), coeffs))
+        frob = t**n
+        return sum([self(a)*(frob**i) for i, a in enumerate(coeffs)]) == 0
 
 
         
