@@ -53,7 +53,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sage: K.<z6> = Fq.extension(2)
         sage: phi = DrinfeldModule(A, [z6, 0, 5])
         sage: phi
-        Drinfeld module defined by T |--> 5*t^2 + z6 over Finite Field in z6 of size 7^6 over its base
+        Drinfeld module defined by T |--> 5*t^2 + z6
 
     ::
 
@@ -80,10 +80,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         sage: frobenius_endomorphism = phi.frobenius_endomorphism()
         sage: frobenius_endomorphism
-        Drinfeld Module morphism:
-          From (gen): 5*t^2 + z6
-          To (gen):   5*t^2 + z6
-          Defn:       t^2
+        Endomorphism of Drinfeld module defined by T |--> 5*t^2 + z6
+          Defn: t^2
 
     Its characteristic polynomial can be computed::
 
@@ -161,12 +159,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         r"""
         Return the Frobenius endomorphism of the Drinfeld module as a
         morphism object.
-
         Let `q` be the order of the base field of the function ring. The
         *Frobenius endomorphism* is defined as the endomorphism whose
         defining Ore polynomial is `t^q`.
-
-        OUTPUT: a Drinfeld module morphism
 
         EXAMPLES::
 
@@ -175,10 +170,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z6> = Fq.extension(2)
             sage: phi = DrinfeldModule(A, [1, 0, z6])
             sage: phi.frobenius_endomorphism()
-            Drinfeld Module morphism:
-              From (gen): z6*t^2 + 1
-              To (gen):   z6*t^2 + 1
-              Defn:       t^2
+            Endomorphism of Drinfeld module defined by T |--> z6*t^2 + 1
+              Defn: t^2
+
+       TESTS::
+
             sage: from sage.rings.function_field.drinfeld_modules.morphism import DrinfeldModuleMorphism
             sage: isinstance(phi.frobenius_endomorphism(), DrinfeldModuleMorphism)
             True
@@ -433,6 +429,20 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 otherwise.
 
         EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(8)
+            sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
+            sage: CP = phi.frobenius_charpoly_crystalline()
+            sage: phi.validate_charpoly(CP)
+            True
+
+        ALGORITHM:
+
+            The coefficients are mapped to their image under the Drinfeld
+            module mapping and the result is evaluated at the Frobenius.
+            Return True if this is 0, and False otherwise.
 
         """
         A = self.function_ring()
