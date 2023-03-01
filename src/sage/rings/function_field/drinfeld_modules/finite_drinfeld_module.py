@@ -274,8 +274,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
                  the characteristic polynomial, and rank 2 Drinfeld
                  modules where the degree 1 coefficient of \phi_T is
                  0.
-        
-        See [Gek2008]_ for the rank two version of this algorithm.
 
         INPUT: (default: ``'X'``) the name of the second variable
 
