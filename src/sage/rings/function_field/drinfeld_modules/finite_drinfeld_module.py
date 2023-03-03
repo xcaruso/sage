@@ -319,10 +319,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
             for k in range(shifts[j]):
                 for i in range(len(gen_powers[k])):
                     sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
-        #if sys.is_invertible():
-        sol = list(sys.solve_right(rhs))
-        #else:
-        #    raise ValueError("Can't solve system for characteristic polynomial")
+        if sys.right_nullity() == 0:
+            sol = list(sys.solve_right(rhs))
+        else:
+            raise ValueError("Can't solve system for characteristic polynomial")
         # The system is solved over L, but the coefficients should all lie in Fq
         # We project back into Fq here.
         sol_Fq = list(map(lambda x:
@@ -355,7 +355,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
             sage: phi.frobenius_charpoly_crystalline()
-            X^10 + X^9 + (3*T + z2 + 1)*X^8 + (-T^2 + z2*T + 2*z2 + 1)*X^7 + (-T^3 + (z2 + 2)*T^2 + (4*z2 + 2)*T - 1)*X^6 + (3*T^4 + T^3 + 3*z2*T + 3*z2 + 3)*X^5 + ((4*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + 3*T^2 + (2*z2 + 4)*T + 4*z2 + 1)*X^4 + (3*T^5 + (2*z2 + 3)*T^4 - T^3 + (2*z2 + 2)*T^2 + (z2 + 3)*T + 4*z2)*X^3 + (3*T^6 + (3*z2 + 2)*T^5 + (4*z2 + 1)*T^4 + z2*T^3 + (4*z2 + 4)*T^2 + 4*z2*T)*X^2 + (2*T^7 + 3*T^6 + 2*z2*T^5 + (2*z2 + 3)*T^4 + (4*z2 + 3)*T^3 + (z2 + 2)*T^2 + (z2 + 4)*T + 2*z2 + 2)*X + T^8 + (4*z2 + 3)*T^6 + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
+            X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + (4*T^3 + (z2 + 2)*T^2 + (4*z2 + 2)*T + 4)*X^6 + (3*T^4 + T^3 + 3*z2*T + 3*z2 + 3)*X^5 + ((4*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + 3*T^2 + (2*z2 + 4)*T + 4*z2 + 1)*X^4 + (3*T^5 + (2*z2 + 3)*T^4 + 4*T^3 + (2*z2 + 2)*T^2 + (z2 + 3)*T + 4*z2)*X^3 + (3*T^6 + (3*z2 + 2)*T^5 + (4*z2 + 1)*T^4 + z2*T^3 + (4*z2 + 4)*T^2 + 4*z2*T)*X^2 + (2*T^7 + 3*T^6 + 2*z2*T^5 + (2*z2 + 3)*T^4 + (4*z2 + 3)*T^3 + (z2 + 2)*T^2 + (z2 + 4)*T + 2*z2 + 2)*X + T^8 + (4*z2 + 3)*T^6 + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
             
             sage: Fq = GF(27)
             sage: A.<T> = Fq[]
@@ -376,6 +376,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         Fq = self._Fq
         L = self.category().base_over_constants_field()
+        A = self.function_ring()
         q = Fq.cardinality()
         r, n = self.rank(), L.degree(Fq)
         # Precision can be lowered to (n + 1)/m.
@@ -413,7 +414,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return M
         reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
-        return (prod(reduced_companions)*C*C0).charpoly(var)
+        charpoly_L = (prod(reduced_companions)*C*C0).charpoly(var)
+        # The above line obtains a char poly with coefficients in L[T]
+        # This maps them into A = Fq[T]
+        coeffs_L = charpoly_L.coefficients(sparse=False)
+        return PolynomialRing(A, name=var)(
+                list(map(lambda coeff:\
+                A(list(map(lambda x:\
+                self.base_over_constants_field()(x).vector()[0], coeff))),\
+                coeffs_L)))
 
     def validate_charpoly(self, poly):
         r"""
