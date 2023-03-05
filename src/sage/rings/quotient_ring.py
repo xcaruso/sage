@@ -1420,7 +1420,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
                 xs = f(x.lift())   # in Rs
                 y = xs.lift()      # in S
                 return to_ring(y)
-        elif isinstance(Rs, LocalizedRing):
+        elif isinstance(Rs, Localization):
             S = Rs.numerator_ring()
             I = Rs.ideal(gens)
             K = I.numerator_ideal()
@@ -1587,3 +1587,5 @@ class QuotientRingIdeal_principal(ideal.Ideal_principal, QuotientRingIdeal_gener
         sage: Zmod(9).ideal(-33)
         Principal ideal (3) of Ring of integers modulo 9
     """
+    def saturation(self, other):
+        return QuotientRingIdeal_generic.saturation(self, other)
