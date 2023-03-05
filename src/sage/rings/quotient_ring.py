@@ -118,7 +118,7 @@ from sage.misc.cachefunc import cached_method
 from sage.categories.rings import Rings
 from sage.categories.commutative_rings import CommutativeRings
 from sage.rings.zero_ring import ZeroRing
-from sage.rings.localized_ring import LocalizedRing
+from sage.rings.localization import Localization
 
 
 import sage.interfaces.abc
@@ -1404,7 +1404,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         return QuotientRingIdeal_generic
 
     def _flattening_function(self):
-        from sage.rings.localized_ring import localization_with_simplification
+        from sage.rings.localization import localization_with_simplification
         R = self.cover_ring()
         try:
             Rs, f = R._flattening_function()   # f : R -> Rs

@@ -30,6 +30,7 @@ from types import GeneratorType
 
 from sage.categories.rings import Rings
 from sage.categories.fields import Fields
+from sage.categories.integral_domains import IntegralDomains
 from sage.structure.element import MonoidElement
 from sage.structure.richcmp import rich_to_bool, richcmp
 from sage.structure.sequence import Sequence
@@ -1445,6 +1446,31 @@ class Ideal_principal(Ideal_generic):
             return self.gen().divides(other.gen())
         raise NotImplementedError
 
+    def saturation(self, other):
+        R = self.ring()
+        if R not in IntegralDomains():
+            raise NotImplementedError
+        res = self.gen()
+        if res.is_zero():
+            return self
+        if isinstance(other, Ideal_generic):
+            if other.ring() is not R:
+                other = other.change_ring(R)
+            other = other.gens()
+            if len(other) > 1:
+                raise NotImplementedError("saturation is only implemented for principal ideals")
+            else:
+                other = other[0]
+        ogen = R(other)
+        g = res.gcd(ogen)
+        n = 0
+        if g.is_unit():
+            return self, n
+        while g.divides(res):
+            res //= g
+            n += 1
+        return R.ideal(res), n
+
 
 class Ideal_pid(Ideal_principal):
     """
@@ -1686,23 +1712,6 @@ class Ideal_pid(Ideal_principal):
         if self.ring() is ZZ:
             return ZZ.residue_field(self, check = False)
         raise NotImplementedError("residue_field() is only implemented for ZZ and rings of integers of number fields.")
-
-    def saturation(self, other):
-        R = self.ring()
-        if isinstance(other, Ideal_generic):
-            if other.ring() is not R:
-                other = other.change_ring(R)
-            other = other.gen()
-        ogen = R(other)
-        res = self.gen()
-        g = res.gcd(ogen)
-        n = 0
-        if g.is_unit():
-            return self, n
-        while g.divides(res):
-            res //= g
-            n += 1
-        return R.ideal(res), n
 
 
 class Ideal_fractional(Ideal_generic):
