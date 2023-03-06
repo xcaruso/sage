@@ -4,10 +4,14 @@ Localization
 Localization is an important ring construction tool. Whenever you have
 to extend a given integral domain such that it contains the inverses
 of a finite set of elements but should allow non injective homomorphic
-images this construction will be needed. See the example on
-Ariki-Koike algebras below for such an application.
+images this construction will be needed.
+
+Localization plays a quite important role in algebraic geometry as
+it corresponds to taking open subsets of the corresponding schemes.
 
 EXAMPLES::
+
+.. RUBRIC:: Ariki-Koike algebras
 
     sage: LZ = ZZ.localization((5,11))
     sage: m = matrix(LZ, [[5, 7], [0,11]])
@@ -24,9 +28,9 @@ EXAMPLES::
     sage: mi == ~m
     True
 
-The next example defines the most general ring containing the coefficients of the irreducible
-representations of the Ariki-Koike algebra corresponding to the three colored permutations on
-three elements::
+The next example defines the most general ring containing the coefficients
+of the irreducible representations of the Ariki-Koike algebra corresponding
+to the three colored permutations on three elements::
 
     sage: R.<u0, u1, u2, q> = ZZ[]
     sage: u = [u0, u1, u2]
@@ -39,7 +43,8 @@ three elements::
     (q, q + 1, u2, u1, u1 - u2, u0, u0 - u2, u0 - u1, u2*q - u1, u2*q - u0,
     u1*q - u2, u1*q - u0, u0*q - u2, u0*q - u1)
 
-Define the representation matrices (of one of the three dimensional irreducible representations)::
+We define the representation matrices (of one of the three dimensional
+irreducible representations)::
 
     sage: m1 = matrix(L, [[u1, 0, 0],[0, u0, 0],[0, 0, u0]])
     sage: m2 = matrix(L, [[(u0*q - u0)/(u0 - u1), (u0*q - u1)/(u0 - u1), 0],
@@ -51,7 +56,7 @@ Define the representation matrices (of one of the three dimensional irreducible 
     sage: m1.base_ring() == L
     True
 
-Check relations of the Ariki-Koike algebra::
+We check the relations of the Ariki-Koike algebra::
 
     sage: m1*m2*m1*m2 == m2*m1*m2*m1
     True
@@ -59,11 +64,11 @@ Check relations of the Ariki-Koike algebra::
     True
     sage: m1*m3 == m3*m1
     True
-    sage: m1^3 -(u0+u1+u2)*m1^2 +(u0*u1+u0*u2+u1*u2)*m1 - u0*u1*u2 == 0
+    sage: m1^3 - (u0+u1+u2)*m1^2 + (u0*u1+u0*u2+u1*u2)*m1 - u0*u1*u2 == 0
     True
-    sage: m2^2 -(q-1)*m2 - q == 0
+    sage: m2^2 - (q-1)*m2 - q == 0
     True
-    sage: m3^2 -(q-1)*m3 - q == 0
+    sage: m3^2 - (q-1)*m3 - q == 0
     True
     sage: ~m1 in m1.parent()
     True
@@ -72,7 +77,7 @@ Check relations of the Ariki-Koike algebra::
     sage: ~m3 in m3.parent()
     True
 
-Obtain specializations in positive characteristic::
+We obtain specializations in positive characteristic::
 
     sage: Fp = GF(17)
     sage: f = L.hom((3,5,7,11), codomain=Fp); f
@@ -100,7 +105,7 @@ Obtain specializations in positive characteristic::
     [ 0  4  5]
     [ 0  7  6]
 
-Obtain specializations in characteristic 0::
+We obtain specializations in characteristic zero::
 
     sage: fQ = L.hom((3,5,7,11), codomain=QQ); fQ
     Ring morphism:
@@ -147,6 +152,77 @@ Obtain specializations in characteristic 0::
     [           0            0 -ybar - zbar]
     sage: mF1.base_ring() == F
     True
+
+.. RUBRIC:: Localizations at zero divisors and simplifications
+
+Localization at zero divisors (which is sometimes required in algebraic
+geometry) is also supported.
+Here is a first example over `\ZZ`::
+
+    sage: A = Integers(12)
+    sage: L = A.localization(2)
+    sage: L
+    Ring of integers modulo 12 localized at (2)
+
+Note that in `L`, we can carry out the computation
+`3 = \frac{12}{2^2} = \frac{0}{2^2} = 0`.
+In SageMath, this simplification is not done by default::
+
+    sage: a = L(3)
+    sage: a
+    3
+
+However, equality test works well::
+
+    sage: a == 0
+    True
+
+It is also possible to simplify the ring `L` using the methods
+:meth:`flatten` and :meth:`flattening_morphism`::
+
+    sage: L.flatten()
+    Ring of integers modulo 3
+    sage: L.flattening_morphism()
+    Ring morphism:
+      From: Ring of integers modulo 12 localized at (2)
+      To:   Ring of integers modulo 3
+      Defn: 1 |--> 1
+
+Here is a second example over polynomial rings mixing localizations
+and quotients::
+
+    sage: A.<x,y> = QQ[]
+    sage: B = A.quotient([x*y^2 - x])
+    sage: C = B.localization([x, y-1])
+    sage: D = C.quotient([x - 2*y + 1])
+
+Following the interpretation of algebraic geometry:
+
+- ``A`` is the ring of functions on the affine plane,
+
+- ``B`` is the ring of functions on the union of the three lines
+  `x = 0`, `y = 1`, `y = -1`,
+
+- ``C`` is obtained from ``B`` by taking the open subset defined
+  by `x \neq 0` and `y - 1 \neq 0`; hence it is the ring of functions
+  on the line `y = -1`,
+
+- ``D`` corresponds to the intersection of the line `y = -1` with the
+  line `x - 2y + 1`, which consists of the unique point `(-3, -1)`;
+  consequently `D` is the ring of functions over this point, it is
+  then isomorphic to the base field `\QQ` itself.
+
+In this case, the methods :meth:`flatten` and :meth:`flattening_morphism`
+are able to do this simplification::
+
+    sage: D.flatten()
+    Rational Field
+    sage: D.flattening_morphism()
+    Ring morphism:
+      From: Quotient of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x*y^2 - x) localized at (ybar - 1, xbar) by the ideal (xbar - 2*ybar + 1)
+      To:   Rational Field
+      Defn: xbarbar |--> -3
+            ybarbar |--> -1
 
 TESTS::
 
@@ -254,10 +330,11 @@ def normalize_extra_units(base_ring, add_units, warning=True):
 class LocalizationElement(Element):
     def __init__(self, parent, *x, simplify=True, check=True):
         r"""
+        Initialize this element.
 
         EXAMPLES:
 
-        Example with simplification::
+        Examples with simplification::
 
             sage: L = ZZ.localization([2,3])
             sage: L(4)
@@ -326,7 +403,7 @@ class LocalizationElement(Element):
 
     def _repr_(self):
         r"""
-        How this element should be represented
+        Return a string representation of this element.
 
         EXAMPLES::
 
@@ -401,7 +478,7 @@ class LocalizationElement(Element):
             sage: latex(y*u^2*v)
             \frac{1}{x^{2} + 2 x y + y^{2}}
 
-        ..TESTS::
+        TESTS::
 
             sage: P.<x,y> = QQ[]
             sage: L.<xl,yl> = P.localization([x+y,y])
@@ -420,6 +497,10 @@ class LocalizationElement(Element):
 
     def __hash__(self):
         r"""
+        Return a hash of this element.
+
+        Since deciding equality is not easy, the hash is
+        always `0`.
 
         EXAMPLES::
 
@@ -428,38 +509,50 @@ class LocalizationElement(Element):
             sage: L = PP.localization([xb])
             sage: elt = L(xb*yb,xb^4)
             sage: hash(elt) # random
-            211140964612250627
-            sage: dict = {elt} # indirect_doctest
-            sage: elt in dict
-            True
+            0
 
         """
-        return hash((self._num, self._denom))
+        return 0 # hash((self._num, self._denom))
 
     def numerator(self):
         r"""
+        Return the numerator of this element.
+
+        Note that simplifications can occur but we always have
+        the guarantee that ``x = x.numerator() / x.denominator()``.
 
         EXAMPLES::
 
             sage: R = ZZ.localization([2,3])
             sage: R(4).numerator()
             4
-            sage: R(4,2^2*3).numerator()
+            sage: R(4, 2^2*3).numerator()
             1
 
+        .. SEEALSO::
+
+            :meth:`denominator`
         """
         return self._num
 
     def denominator(self):
         r"""
+        Return the denominator of this element.
+
+        Note that simplifications can occur but we always have
+        the guarantee that ``x = x.numerator() / x.denominator()``.
 
         EXAMPLES::
 
             sage: R = ZZ.localization([2,3])
             sage: R(4).denominator()
             1
-            sage: R(4,2^2*3).denominator()
+            sage: R(4, 2^2*3).denominator()
             3
+
+        .. SEEALSO::
+
+            :meth:`numerator`
         """
         return self._denom
 
@@ -533,7 +626,7 @@ class LocalizationElement(Element):
             sage: L(x*y*z).is_unit()
             True
 
-        ::
+        Other examples where we localize at zero divisors::
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xx,yy> = P.quotient(x*y)
@@ -585,7 +678,6 @@ class LocalizationElement(Element):
             Traceback (most recent call last):
             ...
             ArithmeticError: 5 is not invertible
-
         """
         if not self.is_unit():
             raise ArithmeticError("%s is not invertible" % self)
@@ -608,13 +700,13 @@ class LocalizationElement(Element):
         K = self.parent().fraction_field()
         return K(self._denom, self._num)
 
-    def factor(self, proof=None):
+    def factor(self, proof=False):
         r"""
         Return the factorization of this polynomial.
 
         INPUT:
 
-        - ``proof`` -- (optional) if given it is passed to the
+        - ``proof`` -- a boolean (default: ``False``); passed to the
           corresponding method of the numerator of ``self``
 
         EXAMPLES::
@@ -627,10 +719,7 @@ class LocalizationElement(Element):
         """
         num = self._num
         den = self._denom
-        if proof is not None:
-            F = self._num.factor(proof=proof)
-        else:
-            F = self._num.factor()
+        F = self._num.factor(proof=proof)
         P = self.parent()
         fac = [(P(f), e) for (f, e) in F]
         unit = P(self._denom).inverse_of_unit() * F.unit()
@@ -641,32 +730,34 @@ class LocalizationElement(Element):
         """
         EXAMPLES::
 
-           sage: P.<x,y,z> = GF(7)[]
-           sage: L = P.localization((x, y, z))
-           sage: L(1/x) < L(3/(x*y*z)^3)
-           False
-           sage: ~L(y*z/x) == L(x/(y*z))
-           True
+            sage: P.<x,y,z> = GF(7)[]
+            sage: L = P.localization((x, y, z))
+            sage: ~L(y*z/x) == L(x/(y*z))
+            True
+
+        ::
+
+            sage: A = Integers(40)
+            sage: L = A.localization(2)
+            sage: L(5/2) == 0
+            True
         """
+        if op != op_EQ and op != op_NE:
+            return NotImplemented
         if not self.parent()._has_equality_test:
             return NotImplemented
         a = self._num * other._denom
         b = self._denom * other._num
-        eq = (a - b) in self.parent()._ideal
-        if eq or op == op_EQ or op == op_NE:
-            return rich_to_bool(op, 0 if eq else -1)
+        if (a - b) in self.parent()._ideal:
+            return rich_to_bool(op, 0)
         else:
-            return richcmp(a, b, op)
+            return rich_to_bool(op, -1)
 
     def _rational_(self):
         r"""
         Convert this element to a rational.
 
         This is only possible if its base ring is the ring of integers.
-
-        OUTPUT:
-
-        A rational.
 
         TESTS::
 
@@ -687,37 +778,49 @@ class LocalizationElement(Element):
 
 class Localization(CommutativeRing, UniqueRepresentation):
     r"""
-    The localization generalizes the construction of the field of fractions of an integral domain to
-    an arbitrary ring. Given a (not necessarily commutative) ring `R` and a subset `S` of `R`,
-    there exists a ring `R[S^{-1}]` together with the ring homomorphism `R \longrightarrow R[S^{-1}]`
-    that "inverts" `S`; that is, the homomorphism maps elements in `S` to unit elements in `R[S^{-1}]`
-    and, moreover, any ring homomorphism from `R` that "inverts" `S` uniquely factors through `R[S^{-1}]`.
 
-    The ring `R[S^{-1}]` is called the *localization* of `R` with respect to `S`. For example, if `R` is
-    a commutative ring and `f` an element in `R`, then the localization consists of elements of the form
-    `r/f, r\in R, n \geq 0` (to be precise, `R[f^{-1}] = R[t]/(ft-1)`.
+    The localization generalizes the construction of the field of
+    fractions of an integral domain to an arbitrary ring. Given a
+    ring `R` and a subset `S` of `R`, there exists a ring `R[S^{-1}]`
+    together with the ring homomorphism `R \longrightarrow R[S^{-1}]`
+    that "inverts" `S`; that is, the homomorphism maps elements in `S`
+    to unit elements in `R[S^{-1}]` and, moreover, any ring homomorphism
+    from `R` that "inverts" `S` uniquely factors through `R[S^{-1}]`.
 
-    The above text is taken from `Wikipedia`. The construction here used for this class relies on the
-    construction of the field of fraction and is therefore restricted to integral domains.
+    The ring `R[S^{-1}]` is called the *localization* of `R` with
+    respect to `S`. For example, if `f` an element in `R`, then the
+    localization consists of elements of the form `r/f^n, r\in R,
+    n \geq 0` (to be precise, `R[f^{-1}] = R[t]/(ft-1)`.
 
-    Accordingly, this class is inherited from :class:`IntegralDomain` and can only be used in that context.
-    Furthermore, the base ring should support :meth:`sage.structure.element.CommutativeRingElement.divides` and
-    the exact division operator `//` (:meth:`sage.structure.element.Element.__floordiv__`) in order to guarantee
-    an successful application.
+    .. NOTE::
+
+        The base ring should support saturation of ideals in order
+        to guarantee an successful application.
+        When :meth:`sage.structure.element.CommutativeRingElement.divides`
+        and the exact division operator `//`
+        (:meth:`sage.structure.element.Element.__floordiv__`) are
+        implemented, fractions are simplified automatically.
 
     INPUT:
 
-    - ``base_ring`` -- an instance of :class:`Ring` allowing the construction of :meth:`fraction_field` (that is an integral domain)
+    - ``base_ring`` -- a ring
 
-    - ``extra_units`` -- tuple of elements of ``base_ring`` which should be turned into units
+    - ``extra_units`` -- tuple of elements of ``base_ring`` which
+      should be turned into units
 
-    - ``names`` -- passed to :class:`IntegralDomain`
+    - ``names`` -- a list of string or ``None`` (default: ``None``),
+      the names of the variables in the localization; if not given,
+      the variable names of the base are reused
 
-    - ``normalize`` -- (optional, default: True) passed to :class:`IntegralDomain`
+    - ``normalize`` -- a boolean (default: ``True``),
+      passed to :class:`CommutativeRing`
 
-    - ``category`` -- (optional, default: None) passed to :class:`IntegralDomain`
+    - ``category`` -- a category or ``None`` (default: ``None``),
+      passed to :class:`CommutativeRing`
 
-    - ``warning`` -- (optional, default: True) to suppress a warning which is thrown if self cannot be represented uniquely
+    - ``warning`` -- a boolean (default: ``True``),
+      to suppress a warning which is thrown if self cannot be
+      represented uniquely
 
     REFERENCES:
 
@@ -761,7 +864,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
         sage: y = L(x)
         sage: g = L(s)
         sage: g.parent()
-        Univariate Polynomial Ring in x over Integer Ring localized at (x^2 + 1,)
+        Univariate Polynomial Ring in x over Integer Ring localized at (x^2 + 1)
         sage: f = (y+5)/(y^2+1); f
         (x + 5)/(x^2 + 1)
         sage: f == g
@@ -770,19 +873,14 @@ class Localization(CommutativeRing, UniqueRepresentation):
         sage: Lau.<u, v> = LaurentPolynomialRing(ZZ)
         sage: LauL = Lau.localization(u+1)
         sage: LauL(~u).parent()
-        Multivariate Laurent Polynomial Ring in u, v over Integer Ring localized at (u + 1,)
+        Multivariate Laurent Polynomial Ring in u, v over Integer Ring localized at (u + 1)
 
     Localization by a divisor of 0::
 
         sage: P.<x,y> = QQ[]
         sage: PP.<xb,yb> = P.quotient(x^2-y^2)
         sage: L = PP.localization([xb-yb]); L
-        Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (xb - yb,)
-
-    Localization by a non-divisor of 0::
-
-        sage: L = PP.localization([xb-yb^2]); L
-        Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (-yb^2 + xb,)
+        Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (xb - yb)
 
     TESTS:
 
@@ -790,7 +888,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
 
         sage: R = ZZ.localization(5)
         sage: R.localization(~5)
-        Integer Ring localized at (5,)
+        Integer Ring localized at (5)
 
     """
     Element = LocalizationElement
@@ -819,6 +917,10 @@ class Localization(CommutativeRing, UniqueRepresentation):
 
             sage: R.<x> = ZZ[]
             sage: L = R.localization(x^2+1)
+            sage: TestSuite(L).run()
+
+            sage: A = Integers(100)
+            sage: L = A.localization(5)
             sage: TestSuite(L).run()
         """
         self._numring = base
@@ -855,7 +957,10 @@ class Localization(CommutativeRing, UniqueRepresentation):
         # We create the fraction field if it's easy;
         # this sets at the same time a coercion map to the fraction field
         if self in IntegralDomains():
-            _ = self.fraction_field()
+            try:
+                _ = self.fraction_field()
+            except (NotImplementedError, TypeError):
+                pass
 
     def _element_constructor_(self, *args, **kwds):
         """
@@ -864,34 +969,56 @@ class Localization(CommutativeRing, UniqueRepresentation):
         EXAMPLES::
 
             sage: L = ZZ.localization((5, 2))
-            sage: L(1/25)  # indirect doctest
+            sage: L(1/25)   # indirect doctest
             1/25
-            sage: L(1/20)  # indirect doctest
+            sage: L(1, 20)  # indirect doctest
             1/20
-            sage: L(1/10)  # indirect doctest
-            1/10
+            sage: L(2/10)  # indirect doctest
+            1/5
+
+        ::
+
+            sage: L = Integers(12).localization(3)
+            sage: L(1/3)
+            1/3
+            sage: L(1/2)
+            Traceback (most recent call last):
+            ...
+            ArithmeticError: denominator is not a unit
         """
         kwds['check'] = True
         return self.element_class(self, *args, **kwds)
 
     def _repr_(self):
         r"""
-        String representation of this ring.
+        Return a string representation of this ring.
 
         EXAMPLES::
 
             sage: P.<x,y> = QQ[]
             sage: PP.<xb,yb> = P.quotient(x^2-y^2)
             sage: L = PP.localization([xb-yb]); L
-            Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (xb - yb,)
-
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 - y^2) localized at (xb - yb)
         """
-        if self._extra_units:
+        if len(self._extra_units) == 1:
+            return f"{self._numring} localized at ({self._extra_units[0]})"
+        elif len(self._extra_units) > 1:
             return f"{self._numring} localized at {self._extra_units}"
         else:
             return str(self._numring)
 
     def _latex_(self):
+        r"""
+        Return a LaTeX representation of this ring.
+
+        EXAMPLES::
+
+            sage: P.<x,y> = QQ[]
+            sage: PP.<xb,yb> = P.quotient(x^2-y^2)
+            sage: L = PP.localization([xb-yb])
+            sage: latex(L)
+            \Bold{Q}[x, y]/\left(x^{2} - y^{2}\right)\Bold{Q}[x, y] \left[ \frac{1}{\mathit{xb} - \mathit{yb}}\right]
+        """
         s = latex(self._numring) + r"\left["
         invs = [f"\\frac{{1}}{{{latex(u)}}}" for u in self._extra_units]
         s += ", ".join(invs) + r"\right]"
@@ -944,30 +1071,149 @@ class Localization(CommutativeRing, UniqueRepresentation):
         return self._gens[i]
 
     def _ideal_class_(self, num_gens):
+        r"""
+        Use a specialized class for ideals in localizations.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: L = R.localization(x + 1)
+            sage: I = L.ideal(x)
+            sage: I
+            Ideal (x) of Multivariate Polynomial Ring in x, y over Integer Ring localized at (x + 1)
+            sage: type(I)  # indirect doctest
+            <class 'sage.rings.localization.LocalizationIdeal_generic'>
+        """
         return LocalizationIdeal_generic
 
     def units(self, normalize=False):
+        r"""
+        Return the elements which were inverted to create
+        this localizated ring.
+
+        INPUT:
+
+        - ``normalize`` -- a boolean (default: ``False``); if ``False``,
+          return the elements as provided by the user; if ``True``,
+          normalize the elements (by factoring and sorting them if
+          possible)
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: L = R.localization(x*y)
+            sage: L.units()
+            (x*y,)
+            sage: L.units(normalize=True)
+            (y, x)
+
+        Note that the output consists of elements of the base ring::
+
+            sage: u = L.units()[0]
+            sage: u.parent()
+            Multivariate Polynomial Ring in x, y over Integer Ring
+
+        .. SEEALSO::
+
+            :meth:`inverse_of_units`
+        """
         if normalize:
             return self._extra_units
         else:
             return self._given_units
 
-    def numerator_kernel(self):
-        return self._ideal
-
-    def numerator_ring(self):
-        return self._numring
-
-    def is_integral_domain(self):
-        if self in IntegralDomains():
-            return True
-        return self._ideal.is_prime()
-
     def inverse_of_units(self, normalize=False):
+        r"""
+        Return the inverses of the elements which were inverted
+        to create this localizated ring.
+
+        INPUT:
+
+        - ``normalize`` -- a boolean (default: ``False``); if ``False``,
+          return the inverses of the elements provided by the user;
+          if ``True``, normalize first the elements (by factoring and
+          sorting them if possible)
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: L = R.localization(x*y)
+            sage: L.inverse_of_units()
+            (1/(x*y),)
+            sage: L.inverse_of_units(normalize=True)
+            (1/y, 1/x)
+        """
         if normalize:
             return tuple(self(u).inverse_of_unit() for u in self._extra_units)
         else:
             return tuple(self(u).inverse_of_unit() for u in self._given_units)
+
+    def numerator_kernel(self):
+        r"""
+        If this ring is defined as `R[S^{-1}]`, return the kernel of the
+        defining morphism `R \to R[S^{-1}]`.
+
+        Note that this kernel is nonzero if and only if `S` contains a
+        zero divisor.
+
+        EXAMPLES::
+
+            sage: R.<x> = QQ[]
+            sage: L = R.localization(x+1)
+            sage: L.numerator_kernel()
+            Principal ideal (0) of Univariate Polynomial Ring in x over Rational Field
+
+        ::
+
+            sage: A = Integers(100)
+            sage: L = A.localization(5)
+            sage: L.numerator_kernel()
+            Principal ideal (4) of Ring of integers modulo 100
+        """
+        return self._ideal
+
+    def numerator_ring(self):
+        r"""
+        If this ring is defined as `R[S^{-1}]`, return `R`.
+
+        EXAMPLES::
+
+            sage: R.<x> = QQ[]
+            sage: L = R.localization(x+1)
+            sage: L
+            Univariate Polynomial Ring in x over Rational Field localized at (x + 1)
+            sage: L.numerator_ring()
+            Univariate Polynomial Ring in x over Rational Field
+        """
+        return self._numring
+
+    def is_integral_domain(self):
+        r"""
+        Return ``True`` if this ring is an integral domain.
+
+        EXAMPLES::
+
+            sage: R.<x> = QQ[]
+            sage: L = R.localization(x+1)
+            sage: L.is_integral_domain()
+            True
+
+        ::
+
+            sage: A = Integers(12)
+            sage: L2 = A.localization(2)  # isomorphic to Z/3Z
+            sage: L2.is_integral_domain()
+            True
+
+            sage: L3 = A.localization(3)  # isomorphic to Z/4Z
+            sage: L3.is_integral_domain()
+            False
+        """
+        if self in IntegralDomains():
+            return True
+        # maybe we should have an option to avoid the next call
+        # which can be costly
+        return self._ideal.is_prime()
 
     @cached_method
     def fraction_field(self):
@@ -992,6 +1238,12 @@ class Localization(CommutativeRing, UniqueRepresentation):
         return field
 
     def is_field(self, proof=False):
+        """
+        Return ``True`` if this ring is a field.
+
+        EXAMPLES::
+
+        """
         if self.base_ring().is_field(proof=proof):
             return True
         if proof is False:
@@ -1014,6 +1266,21 @@ class Localization(CommutativeRing, UniqueRepresentation):
         return self.base_ring().characteristic()
 
     def _flattening_function(self):
+        r"""
+        Return a function from this ring to its flattened version.
+
+        This is an helper function; do not call it directly.
+
+        TESTS::
+
+            sage: A.<x> = QQ[]
+            sage: f = A.random_element(degree=5)
+            sage: B = A.localization(f)
+            sage: C = B.quotient(f)
+            sage: C.flatten()  # indirect doctest
+            The zero ring
+
+        """
         from sage.rings.quotient_ring import quotient_with_simplification
         R = self._numring
         try:
@@ -1031,7 +1298,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
             g = lambda x: to_RsI(f(x))         # g : R -> S
         if isinstance(S, Localization):
             base = S._numring
-            units = S._extra_units + [ g(R(u)).numerator() for u in self._extra_units ]
+            units = S._extra_units + tuple(g(R(u)).numerator() for u in self._extra_units)
             ring = localization_with_simplification(base, units)
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
@@ -1050,14 +1317,123 @@ class Localization(CommutativeRing, UniqueRepresentation):
         return ring, isom
 
     def flattening_morphism(self):
+        r"""
+        Return the flattening morphism from this ring to its
+        flattened version (see :meth:`flatten`).
+
+        EXAMPLES::
+
+            sage: L1 = ZZ.localization(2)
+            sage: L2 = L1.localization(3)
+            sage: L2.flattening_morphism()
+            Ring morphism:
+              From: Integer Ring localized at (2) localized at (3)
+              To:   Integer Ring localized at (2, 3)
+              Defn: 1 |--> 1
+
+        ::
+
+            sage: A = Integers(12)
+            sage: B = A.localization(2)
+            sage: B.flattening_morphism()
+            Ring morphism:
+              From: Ring of integers modulo 12 localized at (2)
+              To:   Ring of integers modulo 3
+              Defn: 1 |--> 1
+
+        ::
+
+            sage: A.<x, y> = QQ[]
+            sage: B = A.localization(x)
+            sage: C = B.quotient(x^2*y)
+            sage: C.flattening_morphism()
+            Ring morphism:
+              From: Quotient of Multivariate Polynomial Ring in x, y over Rational Field localized at (x) by the ideal (x^2*y)
+              To:   Univariate Polynomial Ring in x over Rational Field localized at (x)
+              Defn: xbar |--> x
+                    ybar |--> 0
+
+        .. SEEALSO::
+
+            :meth:`flatten`
+
+        """
         ring, isom = self._flattening_function()
         im_gens = [ isom(x) for x in self.gens() ]
         return self._Hom_(ring, category=Rings())(im_gens)
 
     def flatten(self):
+        r"""
+        Return the flattened (and possibly simplified) version of this
+        ring.
+
+        EXAMPLES:
+
+        Localizing twice is equivalent to localizing just once::
+
+            sage: L1 = ZZ.localization(2)
+            sage: L2 = L1.localization(3)
+            sage: L2
+            Integer Ring localized at (2) localized at (3)
+            sage: L2.flatten()
+            Integer Ring localized at (2, 3)
+
+        In the flattened version, quotients always appear before
+        localizations::
+
+            sage: A.<x,y> = QQ[]
+            sage: L = A.localization(x)
+            sage: B = L.quotient(x + y + 1)
+            sage: B
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field localized at (x) by the ideal (x + y + 1)
+            sage: B.flatten()
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x + y + 1) localized at (-ybar - 1)
+
+        A series of quotients are localizations are reduced to a unique
+        quotient followed by a localization::
+
+            sage: A.<x, y, z> = QQ[]
+            sage: B = A.localization(x)
+            sage: C = B.quotient(x^2 + y^2 + z^2 - 1)
+            sage: D = C.localization(z - 1)
+            sage: E = D.quotient(x + y + 1)
+            sage: E
+            Quotient of Quotient of Multivariate Polynomial Ring in x, y, z over Rational Field localized at (x) by the ideal (x^2 + y^2 + z^2 - 1) localized at (zbar - 1) by the ideal (xbar + ybar + 1)
+            sage: E.flatten()
+            Quotient of Multivariate Polynomial Ring in x, y, z over Rational Field by the ideal (x + y + 1, 2*y^2 + z^2 + 2*y, x^2 + y^2 + z^2 - 1) localized at (zbar - 1, -ybar - 1)
+
+        Simplifications are made when possible::
+
+            sage: A.<x, y> = QQ[]
+            sage: B = A.localization(x)
+            sage: C = B.quotient(x^2*y)
+            sage: C
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field localized at (x) by the ideal (x^2*y)
+            sage: C.flatten()
+            Univariate Polynomial Ring in x over Rational Field localized at (x)
+
+        ::
+
+            sage: A = Integers(12)
+            sage: B = A.localization(2)
+            sage: B
+            Ring of integers modulo 12 localized at (2)
+            sage: B.flatten()
+            Ring of integers modulo 3
+
+            sage: C = B.localization(3)
+            sage: C
+            Ring of integers modulo 12 localized at (2) localized at (3)
+            sage: C.flatten()
+            The zero ring
+
+        .. SEEALSO::
+
+            :meth:`flattening_morphism`
+
+        """
         ring, _ = self._flattening_function()
         return ring
-
 
     def _Hom_(self, other, category):
         return RingHomset_localized(self, other, category=category)
@@ -1089,7 +1465,7 @@ class LocalizationIdeal_generic(Ideal_generic):
             sage: L = PP.localization([xb])
             sage: I = L.ideal(L(yb,xb^2))
             sage: I
-            Ideal (yb/xb^2) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) localized at (xb,)
+            Ideal (yb/xb^2) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) localized at (xb)
             sage: I.numerator_ideal()
             Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y)
 

@@ -61,6 +61,7 @@ ZZ = None
 
 from sage.structure.parent_gens import ParentWithGens
 from sage.structure.sequence import Sequence
+from sage.categories.integral_domains import IntegralDomains
 import sage.rings.number_field.number_field_base as number_field_base
 from sage.misc.fast_methods import Singleton
 from sage.misc.superseded import deprecated_function_alias
@@ -379,7 +380,7 @@ class RationalField(Singleton, number_field_base.NumberField):
             return rational.Z_to_Q() * ZZ._internal_coerce_map_from(S)
         from sage.rings.localization import Localization
         if isinstance(S, Localization):
-            if S.fraction_field() is self:
+            if S in IntegralDomains() and S.fraction_field() is self:
                 from sage.structure.coerce_maps import CallableConvertMap
                 return CallableConvertMap(S, self, lambda x: x._value, parent_as_first_arg=False)
 

@@ -1425,7 +1425,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             I = Rs.ideal(gens)
             K = I.numerator_ideal()
             SK, to_SK = quotient_with_simplification(S, K)
-            units = [ to_SK(u) for u in Rs._units ]
+            units = [ to_SK(u) for u in Rs._extra_units ]
             ring = localization_with_simplification(SK, units)
             def isom(x):  # self -> ring
                 xs = f(x.lift())  # in Rs
