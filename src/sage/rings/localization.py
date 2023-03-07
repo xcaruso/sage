@@ -1295,10 +1295,8 @@ class Localization(CommutativeRing, UniqueRepresentation):
         TESTS::
 
             sage: A.<x> = QQ[]
-            sage: f = A.random_element(degree=5)
-            sage: B = A.localization(f)
-            sage: C = B.quotient(f)
-            sage: C.flatten()  # indirect doctest
+            sage: B = A.localization(0)
+            sage: B.flatten()  # indirect doctest
             The zero ring
 
         """
@@ -1385,8 +1383,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
 
     def flatten(self):
         r"""
-        Return the flattened (and possibly simplified) version of this
-        ring.
+        Return the flattened (and possibly simplified) version of this ring.
 
         EXAMPLES:
 
@@ -1450,7 +1447,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
 
         .. SEEALSO::
 
-            :meth:`flattening_morphism`
+            :meth:`flattening_morphism`, :meth:`sage.rings.quotient_ring.QuotientRing_nc.flatten`
 
         """
         ring, _ = self._flattening_function()

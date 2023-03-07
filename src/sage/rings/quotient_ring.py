@@ -1404,6 +1404,21 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         return QuotientRingIdeal_generic
 
     def _flattening_function(self):
+        r"""
+        Return a function from this ring to its flattened version.
+
+        This is an helper function; do not call it directly.
+
+        TESTS::
+
+            sage: A.<x> = QQ[]
+            sage: f = A.random_element(degree=5)
+            sage: B = A.localization(f)
+            sage: C = B.quotient(f)
+            sage: C.flatten()  # indirect doctest
+            The zero ring
+
+        """
         R = self.cover_ring()
         try:
             Rs, f = R._flattening_function()   # f : R -> Rs
@@ -1440,16 +1455,132 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         return ring, isom
 
     def flattening_morphism(self):
+        r"""
+        Return the flattening morphism from this ring to its
+        flattened version (see :meth:`flatten`).
+
+        EXAMPLES::
+
+            sage: A.<x, y> = QQ[]
+            sage: B = A.localization(x)
+            sage: C = B.quotient(x^2*y)
+            sage: C.flattening_morphism()
+            Ring morphism:
+              From: Quotient of Multivariate Polynomial Ring in x, y over Rational Field localized at (x) by the ideal (x^2*y)
+              To:   Univariate Polynomial Ring in x over Rational Field localized at (x)
+              Defn: xbar |--> x
+                    ybar |--> 0
+
+        .. SEEALSO::
+
+            :meth:`flatten`
+
+        """
         ring, isom = self._flattening_function()
         im_gens = [ isom(x) for x in self.gens() ]
         return self._Hom_(ring, category=Rings())(im_gens)
 
     def flatten(self):
+        r"""
+        Return the flattened (and possibly simplified) version of this ring.
+
+        EXAMPLES:
+
+        In the flattened version, quotients always appear before localizations::
+
+            sage: A.<x,y> = QQ[]
+            sage: L = A.localization(x)
+            sage: B = L.quotient(x + y + 1)
+            sage: B
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field localized at (x) by the ideal (x + y + 1)
+            sage: B.flatten()
+            Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x + y + 1) localized at (-ybar - 1)
+
+        A series of quotients are localizations are reduced to a unique
+        quotient followed by a localization::
+
+            sage: A.<x, y, z> = QQ[]
+            sage: B = A.localization(x)
+            sage: C = B.quotient(x^2 + y^2 + z^2 - 1)
+            sage: D = C.localization(z - 1)
+            sage: E = D.quotient(x + y + 1)
+            sage: E
+            Quotient of Quotient of Multivariate Polynomial Ring in x, y, z over Rational Field localized at (x) by the ideal (x^2 + y^2 + z^2 - 1) localized at (zbar - 1) by the ideal (xbar + ybar + 1)
+            sage: E.flatten()
+            Quotient of Multivariate Polynomial Ring in x, y, z over Rational Field by the ideal (x + y + 1, 2*y^2 + z^2 + 2*y, x^2 + y^2 + z^2 - 1) localized at (zbar - 1, -ybar - 1)
+
+        .. SEEALSO::
+
+            :meth:`flattening_morphism`, :meth:`sage.rings.localization.Localization.flatten`
+
+        """
+
         ring, _ = self._flattening_function()
         return ring
 
 
 def quotient_with_simplification(ring, ideal, flatten=True):
+    r"""
+    Return a simplified version of the ring of ``ring`` by ``ideal``.
+
+    This is an helper function. Do not call it directly.
+
+    INPUT:
+
+    - ``ring`` -- a ring
+
+    - ``ideal`` -- an ideal in the previous ring
+
+    - ``flatten`` -- a boolean (default: ``True``), whether we should
+      flatten the ring before proceeding
+
+    OUTPUT:
+
+    A pair ``(R, f)`` where
+
+    - ``R`` is the simplified quotient and
+
+    - ``f`` is a Python function that transforms an element of
+      ``ring/ideal`` into an element of ``R``
+
+    EXAMPLES:
+
+    Useless variables are removed::
+
+        sage: from sage.rings.quotient_ring import quotient_with_simplification
+        sage: A.<x, y> = QQ[]
+        sage: I = A.ideal(y)
+        sage: R, f = quotient_with_simplification(A, I)
+        sage: R
+        Univariate Polynomial Ring in x over Rational Field
+        sage: f(x)
+        x
+        sage: f(y)
+        0
+
+        sage: J = R.ideal(f(x))
+        sage: S, _ = quotient_with_simplification(R, J)
+        sage: S
+        Rational Field
+
+    If we quotient out by the full ideal, the zero ring is returned::
+
+        sage: Z, _ = quotient_with_simplification(A, A.ideal(1))
+        sage: Z
+        The zero ring
+
+    An example where the simplification fails with ``flatten=False``::
+
+        sage: A.<x, y> = QQ[]
+        sage: I = A.ideal(y)
+        sage: B = A.quotient(I)
+        sage: J = B.ideal(x)
+        sage: T1, _ = quotient_with_simplification(B, J); T1
+        Rational Field
+        sage: T2, _ = quotient_with_simplification(B, J, flatten=False); T2
+        Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x, y)
+
+    """
     from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
     from sage.rings.polynomial.polynomial_ring import PolynomialRing_general
     from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
@@ -1588,7 +1719,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
              4)
 
             sage: J = S.ideal([x, y])
-            sage: I.saturation(y)
+            sage: I.saturation(J)
             (Ideal (1) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 + y),
              7)
 
@@ -1609,6 +1740,22 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         return R.ideal([R(g) for g in sat.gens()]), n
 
     def is_prime(self):
+        r"""
+        Return ``True`` if this ideal is a prime ideal.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: S = R.quotient(x^2 + y)
+            sage: I = S.ideal(x)
+            sage: I.is_prime()
+            True
+
+            sage: J = S.ideal(y)
+            sage: J.is_prime()
+            False
+
+        """
         return self.cover_ideal().is_prime()
 
 
@@ -1647,7 +1794,7 @@ class QuotientRingIdeal_principal(ideal.Ideal_principal, QuotientRingIdeal_gener
              4)
 
             sage: J = S.ideal([x, y])
-            sage: I.saturation(y)
+            sage: I.saturation(J)
             (Ideal (1) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2 + y),
              7)
 
