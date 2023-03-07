@@ -49,6 +49,7 @@ class ZeroRing(UniqueRepresentation, CommutativeRing):
 
     def __init__(self, base=ZZ, category=None):
         CommutativeRing.__init__(self, base, category=category)
+        self._names = tuple()
 
     def _repr_(self):
         return "The zero ring"

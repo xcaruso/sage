@@ -391,8 +391,7 @@ class LocalizationElement(Element):
                 denom = denom // g
             elif parent._has_floordiv:
                 try:
-                    units = parent._extra_units
-                    for u in units:
+                    for u in parent._extra_units:
                         while u.divides(num) and u.divides(denom):
                             num = num // u
                             denom = denom // u
@@ -441,7 +440,7 @@ class LocalizationElement(Element):
         facts = [ ]
         R = self.parent()
         S = R.numerator_ring()
-        with localvars(S,R.variable_names()):
+        with localvars(S, R.variable_names()):
             if self._denom == 1:
                 s = str(self._num)
             else:
@@ -463,7 +462,7 @@ class LocalizationElement(Element):
 
         EXAMPLES::
 
-            sage: P.<x,y> = QQ[]
+            sage: P.<x, y> = QQ[]
             sage: L = P.localization([x+y, y])
             sage: u = L(x+y).inverse_of_unit()
             sage: latex(u)
@@ -480,8 +479,8 @@ class LocalizationElement(Element):
 
         TESTS::
 
-            sage: P.<x,y> = QQ[]
-            sage: L.<xl,yl> = P.localization([x+y,y])
+            sage: P.<x, y> = QQ[]
+            sage: L.<xl, yl> = P.localization([x+y,y])
             sage: latex(L(x+y).inverse_of_unit())
             \frac{1}{\mathit{xl} + \mathit{yl}}
             sage: latex(x)
@@ -894,6 +893,14 @@ class Localization(CommutativeRing, UniqueRepresentation):
     Element = LocalizationElement
 
     def __classcall_private__(cls, base, units, names=None, normalize=True, category=None):
+        r"""
+        TESTS::
+
+            sage: L1 = ZZ.localization((2, 5))
+            sage: L2 = ZZ.localization([2, 5])
+            sage: L1 is L2
+            True
+        """
         if not isinstance(units, (list, tuple)):
             units = [units]
         units = tuple(base(u) for u in units)
@@ -1243,8 +1250,22 @@ class Localization(CommutativeRing, UniqueRepresentation):
 
         EXAMPLES::
 
+            sage: R.<x, y> = QQ[]
+            sage: L = R.localization(x*y)
+            sage: L.is_field()
+            False
+
+        .. warning::
+
+            This function has known bugs. For example::
+
+                sage: A = Zp(7)
+                sage: L = A.localization(7)  # L is Q7
+                sage: L.is_field()
+                False
+
         """
-        if self.base_ring().is_field(proof=proof):
+        if self.numerator_ring().is_field(proof=proof):
             return True
         if proof is False:
             # It's never a field if the base ring is not semi-local
@@ -1299,7 +1320,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
         if isinstance(S, Localization):
             base = S._numring
             units = S._extra_units + tuple(g(R(u)).numerator() for u in self._extra_units)
-            ring = localization_with_simplification(base, units)
+            ring = base.localization(units)
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
                 denom = g(x.denominator())  # in S
@@ -1309,7 +1330,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
         else:
             base = S
             units = [ g(u) for u in self._extra_units ]
-            ring = localization_with_simplification(base, units)
+            ring = base.localization(units)
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
                 denom = g(x.denominator())  # in S
@@ -1436,70 +1457,131 @@ class Localization(CommutativeRing, UniqueRepresentation):
         return ring
 
     def _Hom_(self, other, category):
+        r"""
+        Return the homset from this ring to ``other`` in the
+        category ``category``.
+
+        EXAMPLES::
+
+            sage: A = ZZ.localization(2)
+            sage: Hom(A, QQ)
+            Set of Homomorphisms from Integer Ring localized at (2) to Rational Field
+
+        """
         return RingHomset_localized(self, other, category=category)
 
 
-def localization_with_simplification(base, units):
-    simplified_units = [ ]
-    for u in units:
-        try:
-            if not u.is_unit():
-                simplified_units.append(u)
-        except NotImplementedError:
-            simplified_units.append(u)
-    if simplified_units:
-        return Localization(base, simplified_units)
-    else:
-        return base
-
-
 class LocalizationIdeal_generic(Ideal_generic):
+    r"""
+    Generic class for ideal in localized rings.
+
+    See :func:`sage.rings.ideal.Ideal()`.
+    """
     @cached_method
     def numerator_ideal(self):
         r"""
+        If the underlying ring is `R[S^{-1}]`, return the
+        intersection of the ideal with `R`; it is an ideal of `R`.
 
         EXAMPLES::
 
             sage: P.<x,y> = QQ[]
-            sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = PP.localization([xb])
-            sage: I = L.ideal(L(yb,xb^2))
+            sage: PP.<xb, yb> = P.quotient(x^2*y)
+            sage: L = PP.localization([x])
+            sage: I = L.ideal(y/x^2)
             sage: I
             Ideal (yb/xb^2) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y) localized at (xb)
             sage: I.numerator_ideal()
             Ideal (yb) of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x^2*y)
-
         """
         R = self.ring()
         S = R.numerator_ring()
         gens_S = [g.numerator() for g in self.gens()]
         I_S = S.ideal(gens_S)
         for u in R._extra_units:
-            I_S,_ = I_S.saturation(u)
+            I_S, _ = I_S.saturation(u)
         return I_S
 
-    def _contains_(self,elt):
+    def _contains_(self, elt):
         r"""
+        Return ``True`` is ``elt`` belongs to this ideal.
 
         EXAMPLES::
 
             sage: P.<x,y> = QQ[]
-            sage: PP.<xb,yb> = P.quotient(x^2*y)
-            sage: L = PP.localization([xb])
-            sage: I = L.ideal(L(yb,xb^2))
-            sage: L(xb*yb,xb^4) in I
+            sage: PP.<xb, yb> = P.quotient(x^2*y)
+            sage: L = PP.localization([x])
+            sage: I = L.ideal(y/x^2)
+            sage: y in I
             True
+            sage: 1 in I
+            False
 
         """
         return elt.numerator() in self.numerator_ideal()
 
     def is_zero(self):
+        r"""
+        Return ``True`` if this ideal is zero.
+
+        EXAMPLES::
+
+            sage: A = Integers(12)
+            sage: L = A.localization(2)
+            sage: I = L.ideal(2)
+            sage: I.is_zero()
+            False
+
+            sage: J = L.ideal(3)
+            sage: J.is_zero()
+            True
+
+        """
         return all([ x == 0 for x in self.gens() ])
 
     def is_one(self):
+        r"""
+        Return ``True`` if this ideal is the full ideal,
+        that is if it contains `1`.
+
+        EXAMPLES::
+
+            sage: A = Integers(12)
+            sage: L = A.localization(2)
+            sage: I = L.ideal(2)
+            sage: I.is_one()
+            True
+
+            sage: J = L.ideal(3)
+            sage: J.is_one()
+            False
+        """
         return self.numerator_ideal().is_one()
 
-    def saturation(self,other):
+    def saturation(self, other):
+        r"""
+        Return the saturation and an upper bound on the saturation exponent
+        of this ideal with respect to the ideal ``other``.
+
+        INPUT:
+
+        - ``other`` -- another ideal or an element of the base ring
+          (in which case, the saturating ideal is the principal ideal
+          generated by the given element)
+
+        OUTPUT:
+
+        - a pair (ideal, integer)
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L = R.localization(x)
+            sage: I = L.ideal(x*y^3)
+            sage: I.saturation(y)
+            (Ideal (1) of Multivariate Polynomial Ring in x, y over Rational Field localized at (x),
+             3)
+        """
         R = self.ring()
         S = R.numerator_ring()
         I = self.numerator_ideal()
@@ -1516,6 +1598,17 @@ class LocalizationIdeal_generic(Ideal_generic):
         return R.ideal([R(g) for g in J.gens()]), n
 
     def is_prime(self):
+        r"""
+        Return ``True`` is this ideal is a prime ideal.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L = R.localization(x*y)
+            sage: I = L.ideal(x*y + x)
+            sage: I.is_prime()
+            True
+        """
         return self.numerator_ideal().is_prime()
 
 
@@ -1523,7 +1616,47 @@ class LocalizationIdeal_generic(Ideal_generic):
 ###########
 
 class LocalizationMorphism(RingHomomorphism):
+    r"""
+    A class for ring homomorphisms whose domain is a localized ring.
+
+    TESTS::
+
+        sage: A.<x,y> = QQ[]
+        sage: L.<xl, yl> = A.localization((x, y))
+        sage: L.hom([yl, xl])
+        Ring endomorphism of Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+          Defn: xl |--> yl
+                yl |--> xl
+
+        sage: L.hom([y, x])
+        Traceback (most recent call last):
+        ...
+        ValueError: inverted element y is not mapped to a unit
+    """
     def __init__(self, parent, numerator_morphism, base_map=None, check=True):
+        r"""
+        Initialize this morphism.
+
+        INPUT:
+
+        - ``parent`` -- the homset in which this morphism lives
+
+        - ``numerator_morphism`` -- a datum describing the morphism on the
+          numerator ring
+
+        - ``base_map`` -- a morphism or ``None`` (default: ``None``), the
+          action of the morphism of the base ring of the numerator ring
+
+        - ``check`` -- a boolean (default: ``True``), whether to check if
+          the inverted elements are mapped to units in the codomain
+
+        TESTS::
+
+            sage: A.<x,y> = QQ[]
+            sage: L = A.localization(x*y)
+            sage: f = L.hom([y, x], codomain=L)  # indirect doctest
+            sage: TestSuite(f).run()
+        """
         domain = parent.domain()
         if not isinstance(domain, Localization):
             raise TypeError
@@ -1532,31 +1665,153 @@ class LocalizationMorphism(RingHomomorphism):
         if check:
             for u in domain._extra_units:
                 if not f(u).is_unit():
-                    raise ValueError("localized element %s is not mapped to a unit" % u)
+                    raise ValueError("inverted element %s is not mapped to a unit" % u)
 
     def numerator_morphism(self):
+        r"""
+        If the codomain is `R[S^{-1}]`, return the restriction of this
+        morphism to `R`.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L.<xl, yl> = R.localization(x*y)
+            sage: f = L.hom([yl, xl])
+            sage: f
+            Ring endomorphism of Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+              Defn: xl |--> yl
+                    yl |--> xl
+
+            sage: f.numerator_morphism()
+            Ring morphism:
+              From: Multivariate Polynomial Ring in x, y over Rational Field
+              To:   Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+              Defn: x |--> yl
+                    y |--> xl
+
+        """
         return self._numerator_morphism
 
     @cached_method
     def im_gens(self):
+        r"""
+        Return the list of images of the generators of the domain
+        under this morphism.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L.<xl, yl> = R.localization(x*y)
+            sage: f = L.hom([y, x], codomain=L)
+            sage: f.im_gens()
+            [yl, xl]
+
+        """
         return [ self(x) for x in self.domain().gens() ]
 
     def _call_(self, x):
+        r"""
+        Return the image of `x` under this morphism.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L.<xl, yl> = R.localization(x*y)
+            sage: f = L.hom([yl, xl])
+            sage: f(xl/yl)  # indirect doctest
+            yl/xl
+
+        """
         f = self._numerator_morphism
         num = x.numerator()
         denom = x.denominator()
         return f(num) * f(denom).inverse_of_unit()
 
     def _repr_defn(self):
-        return self._numerator_morphism._repr_defn()
+        r"""
+        Return a string with the definition of this morphism.
+
+        Used in constructing string representation.
+
+        EXAMPLES:
+
+            sage: R.<x, y> = QQ[]
+            sage: L.<xl, yl> = R.localization(x*y)
+            sage: f = L.hom([yl, xl])
+            sage: print(f._repr_defn())
+            xl |--> yl
+            yl |--> xl
+
+        """
+        R = self.domain()
+        S = R.numerator_ring()
+        with localvars(S, R.variable_names()):
+            return self._numerator_morphism._repr_defn()
 
 
 class RingHomset_localized(RingHomset_generic):
+    r"""
+    A class for homset when the domain is a localization.
+
+    TESTS::
+
+        sage: R.<x, y> = QQ[]
+        sage: L.<xl, yl> = R.localization(x*y)
+        sage: H = Hom(L, R)  # indirect doctest
+        sage: H
+        Set of Homomorphisms from Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x) to Multivariate Polynomial Ring in x, y over Rational Field
+
+    """
     Element = LocalizationMorphism
 
     @cached_method
     def numerator_homset(self):
+        r"""
+        If the domain is `R[S^{-1}]` and the codomain is `C`,
+        return `\text{Hom}{R, C}`.
+
+        TESTS::
+
+            sage: R.<x, y> = QQ[]
+            sage: L = R.localization(x*y)
+            sage: H = End(L)
+            sage: H
+            Set of Homomorphisms from Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x) to Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+
+            sage: H.numerator_homset()
+            Set of Homomorphisms from Multivariate Polynomial Ring in x, y over Rational Field to Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+
+        """
         return Hom(self.domain().numerator_ring(), self.codomain())
 
     def _element_constructor_(self, *args, **kwds):
+        r"""
+        Construct a morphism in this homset.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: L.<xl, yl> = R.localization(x*y)
+            sage: H = End(L)
+
+        We can pass in the images of the generators::
+
+            sage: H([y, x])
+            Ring endomorphism of Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+              Defn: xl |--> yl
+                    yl |--> xl
+
+        or a morphism at the level of numerators::
+
+            sage: g = R.hom([y, x])
+            sage: g
+            Ring endomorphism of Multivariate Polynomial Ring in x, y over Rational Field
+              Defn: x |--> y
+                    y |--> x
+            sage: H(g)
+            Ring endomorphism of Multivariate Polynomial Ring in x, y over Rational Field localized at (y, x)
+              Defn: xl |--> yl
+                    yl |--> xl
+
+        """
         return self.element_class(self, *args, **kwds)

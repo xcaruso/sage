@@ -1404,7 +1404,6 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
         return QuotientRingIdeal_generic
 
     def _flattening_function(self):
-        from sage.rings.localization import localization_with_simplification
         R = self.cover_ring()
         try:
             Rs, f = R._flattening_function()   # f : R -> Rs
@@ -1426,7 +1425,7 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             K = I.numerator_ideal()
             SK, to_SK = quotient_with_simplification(S, K)
             units = [ to_SK(u) for u in Rs._extra_units ]
-            ring = localization_with_simplification(SK, units)
+            ring = SK.localization(units)
             def isom(x):  # self -> ring
                 xs = f(x.lift())  # in Rs
                 num = to_SK(xs.numerator())      # in S/K
@@ -1520,7 +1519,7 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
         Igens += [g.lift() for g in self.gens()]
         J = R.cover_ring().ideal(Igens)
         return J
-    
+
     def _contains_(self, other):
         r"""
         Check whether this ideal contains the given element.
