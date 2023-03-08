@@ -331,8 +331,7 @@ class SplittingAlgebra(PolynomialQuotientRing_domain):
         for cf in self._coefficients_list:
             cf0 = cf[0]
             try:
-                cf0_inv = ~(cf[0])
-                cf0_inv = self(cf0_inv)
+                cf0_inv = self(cf[0]).inverse_of_unit()
                 verbose("invertible coefficient: %s found" %(cf0_inv))
                 break
             except NotImplementedError:
@@ -352,9 +351,9 @@ class SplittingAlgebra(PolynomialQuotientRing_domain):
                     continue
                 root_inv = self.one()
                 for pos in range(deg_cf-1 ):
-                    root_inv =  (-1 )**(pos+1 ) * cf[deg_cf-pos-1 ] - root_inv * root
+                    root_inv =  (-1)**(pos+1 ) * cf[deg_cf-pos-1 ] - root_inv * root
                 verbose("inverse %s of root %s" % (root_inv, root))
-                root_inv = (-1 )**(deg_cf) * cf0_inv * root_inv
+                root_inv = (-1)**(deg_cf) * cf0_inv * root_inv
                 self._invertible_elements.update({root:root_inv})
                 verbose("adding inverse %s of root %s" % (root_inv, root))
             invert_items = [(k,v) for k, v in self._invertible_elements.items()]

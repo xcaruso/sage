@@ -80,8 +80,7 @@ def register_ring_hom(ring_hom):
         Universal Cyclotomic Field
         sage: _.convert_map_from(BR)
         Ring morphism:
-          From: Multivariate Polynomial Ring in u, v, w
-                  over Integer Ring localized at (w,)
+          From: Multivariate Polynomial Ring in u, v, w over Integer Ring localized at (w)
           To:   Universal Cyclotomic Field
           Defn: u |--> E(5)
                 v |--> E(7)

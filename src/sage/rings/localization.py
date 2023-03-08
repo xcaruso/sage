@@ -235,26 +235,24 @@ AUTHORS:
 - Xavier Caruso, Thibaut Verron (2023-03): complete rewrite; allow localization at zero divisors
 """
 
+from sage.structure.unique_representation import UniqueRepresentation
+from sage.structure.element import Element
+from sage.structure.parent_gens import localvars
+from sage.structure.richcmp import richcmp, rich_to_bool
+from sage.structure.richcmp import op_EQ, op_NE
 
 from sage.categories.homset import Hom
 from sage.categories.integral_domains import IntegralDomains
 from sage.categories.rings import Rings
 
-from sage.rings.homset import RingHomset_generic
-from sage.rings.ideal import Ideal_generic
-from sage.rings.integer_ring import ZZ
-from sage.rings.morphism import RingHomomorphism
-from sage.rings.ring import CommutativeRing, CommutativeRing
-
 from sage.misc.cachefunc import cached_method
 from sage.misc.latex import latex
 
-from sage.structure.unique_representation import UniqueRepresentation
-from sage.structure.element import Element
-from sage.structure.parent_gens import localvars
-
-from sage.structure.richcmp import richcmp, rich_to_bool
-from sage.structure.richcmp import op_EQ, op_NE
+from sage.rings.integer_ring import ZZ
+from sage.rings.homset import RingHomset_generic
+from sage.rings.ideal import Ideal_generic
+from sage.rings.morphism import RingHomomorphism
+from sage.rings.ring import CommutativeRing, CommutativeRing
 
 
 # Elements
@@ -311,7 +309,7 @@ def normalize_extra_units(base_ring, add_units, warning=True):
                 continue
             F = list(n.factor())
             add_units_result += [f[0] for f in F]
-        except (NotImplementedError, AttributeError):
+        except (NotImplementedError, ArithmeticError, AttributeError):
             # if :meth:`is_unit` or :meth:`factor` are not available we can't do any more.
             if warning:
                 from warnings import warn
@@ -569,7 +567,7 @@ class LocalizationElement(Element):
         denom = self._denom * other._denom
         return self.__class__(self.parent(), num, denom, check=False)
 
-    def _sub_(self,other):
+    def _sub_(self, other):
         r"""
         Return the subtraction of this element and ``other``.
 
@@ -582,6 +580,18 @@ class LocalizationElement(Element):
         num = self._num * other._denom - self._denom * other._num
         denom = self._denom * other._denom
         return self.__class__(self.parent(), num, denom, check=False)
+
+    def _neg_(self):
+        r"""
+        Return the opposite of this element.
+
+        EXAMPLES::
+
+            sage: L = ZZ.localization((5, 11))
+            sage: -L(1/121)  # indirect doctest
+            -1/121
+        """
+        return self.__class__(self.parent(), -self._num, self._denom, check=False)
 
     def _mul_(self,other):
         r"""
@@ -608,6 +618,19 @@ class LocalizationElement(Element):
             21/5
         """
         num = self._num * a
+        return self.__class__(self.parent(), num, self._denom, check=False)
+
+    def _rmul_(self,a):
+        r"""
+        Return the product of this element and ``other``.
+
+        EXAMPLES::
+
+            sage: L = ZZ.localization((5, 11))
+            sage: L(3/5) * 7  # indirect doctest
+            21/5
+        """
+        num = a * self._num
         return self.__class__(self.parent(), num, self._denom, check=False)
 
     def is_unit(self):
@@ -681,6 +704,22 @@ class LocalizationElement(Element):
         if not self.is_unit():
             raise ArithmeticError("%s is not invertible" % self)
         return self.__class__(self.parent(), self._denom, self._num, check=False)
+
+    def is_nilpotent(self):
+        r"""
+        Return ``True`` if this element is nilpotent.
+
+        EXAMPLES::
+
+            sage: A = Integers(36)
+            sage: L = A.localization(2)
+            sage: L(2).is_nilpotent()
+            False
+            sage: L(3).is_nilpotent()
+            True
+
+        """
+        return self.parent()._quotient(self._num).is_nilpotent()
 
     def __invert__(self):
         r"""
@@ -901,11 +940,21 @@ class Localization(CommutativeRing, UniqueRepresentation):
             sage: L1 is L2
             True
         """
+        from sage.rings.polynomial.laurent_polynomial_ring import LaurentPolynomialRing_generic
         if not isinstance(units, (list, tuple)):
             units = [units]
         units = tuple(base(u) for u in units)
         if isinstance(names, list):
             names = tuple(names)
+        #if isinstance(base, Localization):
+        #    # I really dislike this automatic simplification;
+        #    # however, I implement it for backward compatibility
+        #    units = base._extra_units + tuple(u.numerator() for u in units)
+        #    base = base.numerator_ring()
+        #if isinstance(base, LaurentPolynomialRing_generic):
+        #    # Same remark
+        #    units = base.gens() + units
+        #    base = base.polynomial_ring()
         if base in IntegralDomains():
             if category is None:
                 category = IntegralDomains()
@@ -913,7 +962,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
                 category = category.join([IntegralDomains()])
         return UniqueRepresentation.__classcall__(cls, base, units, names, normalize, category)
 
-    def __init__(self, base, units, names, normalize, category):
+    def __init__(self, base, units, names=None, normalize=True, category=None):
         """
         Python constructor of Localization.
 
@@ -951,6 +1000,7 @@ class Localization(CommutativeRing, UniqueRepresentation):
                 pass
 
         self._ideal = J
+        self._quotient = base.quotient(J)
         self._has_floordiv = hasattr(base.zero(), "_floordiv_")
         self._has_gcd = self._has_floordiv and hasattr(base.zero(), "gcd")
 
@@ -1238,9 +1288,12 @@ class Localization(CommutativeRing, UniqueRepresentation):
             sage: L.is_subring(K)
             True
         """
-        if not self.is_integral_domain():
-            raise TypeError
-        field = self._numring.quotient(self._ideal).fraction_field()
+        try:
+            if not self.is_integral_domain():
+                raise TypeError("%s is not an integral domain" % self)
+        except NotImplementedError:
+            pass
+        field = self._quotient.fraction_field()
         field.register_coercion(self)
         return field
 
@@ -1272,6 +1325,24 @@ class Localization(CommutativeRing, UniqueRepresentation):
             return False
         else:
             raise NotImplementedError
+
+    def is_finite(self):
+        r"""
+        Return ``True`` if this ring is finite.
+
+        EXAMPLES::
+
+            sage: L = ZZ.localization(2)
+            sage: L.is_finite()
+            False
+
+            sage: A = Integers(12)
+            sage: L = A.localization(2)
+            sage: L.is_finite()
+            True
+
+        """
+        return self._quotient.is_finite()
 
     def characteristic(self):
         """
@@ -1319,20 +1390,24 @@ class Localization(CommutativeRing, UniqueRepresentation):
             base = S._numring
             units = S._extra_units + tuple(g(R(u)).numerator() for u in self._extra_units)
             ring = base.localization(units)
+
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
                 denom = g(x.denominator())  # in S
                 num2 = num.numerator() * denom.denominator()
                 denom2 = num.denominator() * denom.numerator()
                 return ring(num2) * ring(denom2).inverse_of_unit()
+
         else:
             base = S
             units = [ g(u) for u in self._extra_units ]
             ring = base.localization(units)
+
             def isom(x):  # self -> ring
                 num = g(x.numerator())      # in S
                 denom = g(x.denominator())  # in S
                 return ring(num) * ring(denom).inverse_of_unit()
+
         return ring, isom
 
     def flattening_morphism(self):
@@ -1658,7 +1733,12 @@ class LocalizationMorphism(RingHomomorphism):
         if not isinstance(domain, Localization):
             raise TypeError
         RingHomomorphism.__init__(self, parent)
-        self._numerator_morphism = f = parent.numerator_homset()(numerator_morphism, base_map=base_map, check=check)
+        try:
+            f = parent.numerator_homset()(numerator_morphism, base_map=base_map, check=check)
+        except (ValueError, TypeError):
+            # sometimes works better (e.g. the class SplittingAlgebras redefines the method hom)
+            f = domain.numerator_ring().hom(numerator_morphism, codomain=parent.codomain(), base_map=base_map, check=check)
+        self._numerator_morphism = f
         if check:
             for u in domain._extra_units:
                 if not f(u).is_unit():
@@ -1730,7 +1810,7 @@ class LocalizationMorphism(RingHomomorphism):
 
         Used in constructing string representation.
 
-        EXAMPLES:
+        EXAMPLES::
 
             sage: R.<x, y> = QQ[]
             sage: L.<xl, yl> = R.localization(x*y)

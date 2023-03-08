@@ -1430,10 +1430,12 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             S = Rs.cover_ring()
             K = Rs.defining_ideal() + S.ideal([ x.lift() for x in gens ])
             ring, to_ring = quotient_with_simplification(S, K)
+
             def isom(x):  # self -> ring
                 xs = f(x.lift())   # in Rs
                 y = xs.lift()      # in S
                 return to_ring(y)
+
         elif isinstance(Rs, Localization):
             S = Rs.numerator_ring()
             I = Rs.ideal(gens)
@@ -1441,17 +1443,21 @@ class QuotientRing_generic(QuotientRing_nc, ring.CommutativeRing):
             SK, to_SK = quotient_with_simplification(S, K)
             units = [ to_SK(u) for u in Rs._extra_units ]
             ring = SK.localization(units)
+
             def isom(x):  # self -> ring
                 xs = f(x.lift())  # in Rs
                 num = to_SK(xs.numerator())      # in S/K
                 denom = to_SK(xs.denominator())  # in S/K
                 return ring(num) * ring(denom).inverse_of_unit()
+
         else:
             Is = Rs.ideal(gens)
             ring, to_ring = quotient_with_simplification(Rs, Is, flatten=False)
+
             def isom(x):  # self -> ring
                 xs = f(x.lift())
                 return to_ring(xs)
+
         return ring, isom
 
     def flattening_morphism(self):
@@ -1532,7 +1538,7 @@ def quotient_with_simplification(ring, ideal, flatten=True):
     - ``ideal`` -- an ideal in the previous ring
 
     - ``flatten`` -- a boolean (default: ``True``), whether we should
-      flatten the ring before proceeding
+      flatten the ring after proceeding
 
     OUTPUT:
 
@@ -1620,7 +1626,7 @@ def quotient_with_simplification(ring, ideal, flatten=True):
         try:
             F, f = Q._flattening_function()
             return F, lambda x: f(Q(x))
-        except:
+        except (TypeError, ValueError):
             pass
     return Q, lambda x: Q(x)
 
@@ -1654,12 +1660,15 @@ class QuotientRingIdeal_generic(ideal.Ideal_generic):
 
         """
         R = self.ring()
+        S = R.cover_ring()
+        if R.one() in self.gens():
+            return S.ideal([S.one()])
         if hasattr(R, 'defining_ideal'):
             Igens = list(R.defining_ideal().gens())
         else:
             Igens = [R.modulus()]
         Igens += [g.lift() for g in self.gens()]
-        J = R.cover_ring().ideal(Igens)
+        J = S.ideal(Igens)
         return J
 
     def _contains_(self, other):

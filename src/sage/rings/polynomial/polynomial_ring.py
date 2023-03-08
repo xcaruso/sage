@@ -450,8 +450,9 @@ class PolynomialRing_general(ring.Algebra):
             except NameError:
                 raise TypeError("Unable to coerce string")
         elif isinstance(x, FractionFieldElement):
-            if x.denominator().is_unit():
-                x = x.numerator() * x.denominator().inverse_of_unit()
+            denominator = self(x.denominator())
+            if denominator.is_unit():
+                x = x.numerator() * denominator.inverse_of_unit()
             else:
                 raise TypeError("denominator must be a unit")
         elif isinstance(x, pari_gen):
