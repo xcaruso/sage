@@ -288,6 +288,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi = DrinfeldModule(A, [z, 4, 1, z])
             sage: phi.frobenius_charpoly_gekeler()
             X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + (4*z2*T^3 + (2*z2 + 3)*T^2 + (2*z2 + 2)*T + z2 + 3)*X + (3*z2 + 2)*T^6 + (4*z2 + 2)*T^5 + (3*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
+
+            sage: Fq = GF(125)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(2)
+            sage: phi = DrinfeldModule(A, [z, 0, z])
+            sage: phi.frobenius_charpoly_gekeler()
+            Traceback (most recent call last):
+            ValueError: Can't solve system for characteristic polynomial
                 
         ALGORITHM:
 
@@ -295,12 +303,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
             the Frobenius satisfies a degree r polynomial with
             coefficients in the function ring.
         """
-        Fq = self._Fq
-        L = self.category().base_over_constants_field()
+        Fq, L = self._Fq, self.category().base_over_constants_field()
         A = self.function_ring()
-        q = Fq.cardinality()
+        q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
         T = A.gen()
-        r,n = self.rank(), L.degree(Fq)
         # Compute constants that determine the block structure of the
         # linear system. The system is prepared such that the solution
         # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
@@ -374,24 +380,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
 
         """
-        Fq = self._Fq
-        L = self.category().base_over_constants_field()
+        Fq, L = self._Fq, self.category().base_over_constants_field()
         A = self.function_ring()
-        q = Fq.cardinality()
-        r, n = self.rank(), L.degree(Fq)
-        # Precision can be lowered to (n + 1)/m.
-        # where m is the degree of the A-characteristic.
-        # This requires additional computation.
-        # Computing to precision n + 1 avoids this.
-        precision = n + 1
+        q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
         nstar = ceil(sqrt(n))
         n1, n0 = n // nstar, n % nstar
         dm = self.coefficients(sparse=False)
         rec_coeffs = [dm[i]/dm[r] for i in range(r)]
-        S = PolynomialRing(L, name=str(self._function_ring.gen()))
+        S = PolynomialRing(L, name=str(A.gen()))
         SM = MatrixSpace(S, r, r)
-        mu = (S.gen() - dm[0])**precision
-        mu_coeffs = mu.coefficients(sparse=False)
+        mu_coeffs = ((S.gen() - dm[0])**(n+1)).coefficients(sparse=False)
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
@@ -414,15 +412,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return M
         reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
-        charpoly_L = (prod(reduced_companions)*C*C0).charpoly(var)
+        coeffs_charpoly_L = (prod(reduced_companions)*C*C0).charpoly(var)\
+                            .coefficients(sparse=False)
         # The above line obtains a char poly with coefficients in L[T]
-        # This maps them into A = Fq[T]
-        coeffs_L = charpoly_L.coefficients(sparse=False)
+        # This maps them into A
         return PolynomialRing(A, name=var)(
                 list(map(lambda coeff:\
                 A(list(map(lambda x:\
                 self.base_over_constants_field()(x).vector()[0], coeff))),\
-                coeffs_L)))
+                coeffs_charpoly_L)))
 
     def validate_charpoly(self, poly):
         r"""
