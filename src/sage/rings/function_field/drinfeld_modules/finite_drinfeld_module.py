@@ -186,7 +186,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         deg = self._base.over(Fq).degree(Fq)
         return self._Hom_(self, category=self.category())(t**deg)
 
-    def frobenius_charpoly(self, var='X', algorithm = 'crystalline'):
+    def frobenius_charpoly(self, var='X', algorithm='crystalline'):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism.
