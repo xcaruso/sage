@@ -377,8 +377,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
         A recurrence on elements of the cohomology allows us to
         compute a matrix representation of the Frobenius endomorphism
         efficiently using a companion matrix method.
-
-
         """
         Fq, L = self._Fq, self.category().base_over_constants_field()
         A = self.function_ring()
@@ -412,7 +410,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return M
         reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
-        coeffs_charpoly_L = (prod(reduced_companions)*C*C0).charpoly(var)\
+        charpoly_coeffs_L = (prod(reduced_companions)*C*C0).charpoly(var)\
                             .coefficients(sparse=False)
         # The above line obtains a char poly with coefficients in L[T]
         # This maps them into A
@@ -420,7 +418,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 list(map(lambda coeff:\
                 A(list(map(lambda x:\
                 self.base_over_constants_field()(x).vector()[0], coeff))),\
-                coeffs_charpoly_L)))
+                charpoly_coeffs_L)))
 
     def validate_charpoly(self, poly):
         r"""
@@ -450,8 +448,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             Return True if this is 0, and False otherwise.
 
         """
-        A = self.function_ring()
-        L = self.category().base_over_constants_field()
+        A, L = self.function_ring(), self.category().base_over_constants_field()
         t = self.ore_polring().gen()
         n = L.degree(self._Fq)
         coeffs = poly.coefficients(sparse=False)
