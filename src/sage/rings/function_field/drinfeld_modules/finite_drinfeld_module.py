@@ -130,8 +130,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         - ``function_ring`` -- a univariate polynomial ring whose base
           is a finite field
+
         - ``gen`` -- the generator of the Drinfeld module as a list of
           coefficients or an Ore polynomial
+
         - ``name`` (default: `'t'`) -- the name of the Ore polynomial
           ring gen
 
@@ -147,7 +149,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi._gen == ore_polring(gen)
             True
         """
-
         # NOTE: There used to be no __init__ here (which was fine). I
         # added one to ensure that FiniteDrinfeldModule would always
         # have _frobenius_norm and _frobenius_trace attributes.
@@ -479,26 +480,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         Let `\mathbb{F}_q[T]` be the function ring, write `\chi = T^2 -
         A(X)T + B(X) \in \mathbb{F}_q[T][X]` for the characteristic
-        polynomial of the Frobenius endomorphism. The *Frobenius norm*
-        is defined as the polynomial `B(T) \in \mathbb{F}_q[T]`.
+        polynomial of the Frobenius endomorphism. The *Frobenius trace*
+        is defined as the polynomial `A(T) \in \mathbb{F}_q[T]`.
 
         Let `n` be the degree over `\mathbb{F}_q` of the base codomain.
-        Then the Frobenius trace has degree `\leq \frac{n}{2}`.
-
-        OUTPUT: an element in the function ring
-
-        ALGORITHM:
-
-            Let `A(T)` denote the Frobenius trace and `B(T)` denote the
-            Frobenius norm. We begin by computing `B(T)`, see docstring
-            of method :meth:`frobenius_norm` for details. The
-            characteristic polynomial of the Frobenius yields `t^{2n} -
-            \phi_A t^n + \phi_B = 0`, where `t^n` is the Frobenius
-            endomorphism. As `\phi_B` is now known, we can compute
-            `\phi_A = (t^{2n} + \phi_B) / t^n`. We get `A(T)` by
-            inverting this quantity, using the method
-            :meth:`sage.rings.function_fields.drinfeld_module.drinfeld_module.DrinfeldModule.invert`,
-            see its docstring for details.
+        Then the Frobenius trace has degree at most `\frac{n}{2}`.
 
         EXAMPLES::
 
@@ -520,6 +506,19 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
             sage: A == -phi.frobenius_charpoly()[1]
             True
+
+        ALGORITHM:
+
+            Let `A(T)` denote the Frobenius trace and `B(T)` denote the
+            Frobenius norm. We begin by computing `B(T)`, see docstring
+            of method :meth:`frobenius_norm` for details. The
+            characteristic polynomial of the Frobenius yields `t^{2n} -
+            \phi_A t^n + \phi_B = 0`, where `t^n` is the Frobenius
+            endomorphism. As `\phi_B` is now known, we can compute
+            `\phi_A = (t^{2n} + \phi_B) / t^n`. We get `A(T)` by
+            inverting this quantity, using the method
+            :meth:`sage.rings.function_fields.drinfeld_module.drinfeld_module.DrinfeldModule.invert`,
+            see its docstring for details.
         """
         self._check_rank_two()
         # Notations from Schost-Musleh:
