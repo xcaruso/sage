@@ -342,7 +342,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 + j] for j in range(shifts[i])])
         return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
 
-    def frobenius_charpoly_crystalline(self, var='X'):
+    def _frobenius_charpoly_crystalline(self, var='X'):
         r"""
         Method to compute the characteristic polynomial of the
         Frobenius endomorphism using Crystalline cohomology.
