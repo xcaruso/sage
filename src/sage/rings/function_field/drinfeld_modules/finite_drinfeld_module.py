@@ -261,7 +261,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                     f'{self.frobenius_charpoly.__name__}_{algorithm}')(var)
         raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
 
-    def frobenius_charpoly_gekeler(self, var='X'):
+    def _frobenius_charpoly_gekeler(self, var='X'):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism for any rank if the minimal polynomial is
