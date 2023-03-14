@@ -233,20 +233,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ::
 
-            sage: trace = phi.frobenius_trace()
-            sage: trace
-            (4*z3^2 + 6*z3 + 3)*T + 3*z3^2 + z3 + 4
-            sage: norm = phi.frobenius_norm()
-            sage: norm
-            (5*z3^2 + 2*z3)*T^2 + (4*z3^2 + 3*z3)*T + 5*z3^2 + 2*z3
-
-        ::
-
-            sage: n = 2  # Degree of the base field over Fq
-            sage: trace.degree() <= n/2
-            True
-            sage: norm.degree() == n
-            True
+            sage: phi.frobenius_charpoly(algorithm="NotImplemented")
+            Traceback (most recent call last):
+            NotImplementedError: Algorithm "NotImplemented" not implemented
 
         ALGORITHM:
 
@@ -258,89 +247,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         algorithms = {'gekeler', 'crystalline'}
         if algorithm in algorithms:
             return getattr(self, \
-                    f'{self.frobenius_charpoly.__name__}_{algorithm}')(var)
+                    f'_frobenius_charpoly_{algorithm}')(var)
         raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
-
-    def _frobenius_charpoly_gekeler(self, var='X'):
-        r"""
-        Return the characteristic polynomial of the Frobenius
-        endomorphism for any rank if the minimal polynomial is
-        equal to the characteristic polynomial. Currently only
-        works for Drinfeld modules defined over Fq[T].
-
-        WARNING: This algorithm only works in the "generic" case
-                 when the corresponding linear system is invertible.
-                 Notable cases where this fails include Drinfeld
-                 modules whose minimal polynomial is not equal to
-                 the characteristic polynomial, and rank 2 Drinfeld
-                 modules where the degree 1 coefficient of \phi_T is
-                 0.
-
-        INPUT:
-
-        - ``var`` (default: ``'X'``) -- the name of the second variable
-
-        OUTPUT: a univariate polynomial with coefficients in the
-                function ring
-
-        EXAMPLES::
-
-            sage: Fq = GF(25)
-            sage: A.<T> = Fq[]
-            sage: K.<z> = Fq.extension(6)
-            sage: phi = DrinfeldModule(A, [z, 4, 1, z])
-            sage: phi.frobenius_charpoly_gekeler()
-            X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + (4*z2*T^3 + (2*z2 + 3)*T^2 + (2*z2 + 2)*T + z2 + 3)*X + (3*z2 + 2)*T^6 + (4*z2 + 2)*T^5 + (3*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
-
-            sage: Fq = GF(125)
-            sage: A.<T> = Fq[]
-            sage: K.<z> = Fq.extension(2)
-            sage: phi = DrinfeldModule(A, [z, 0, z])
-            sage: phi.frobenius_charpoly_gekeler()
-            Traceback (most recent call last):
-            ValueError: Can't solve system for characteristic polynomial
-                
-        ALGORITHM:
-
-            Construct a linear system based on the requirement that
-            the Frobenius satisfies a degree r polynomial with
-            coefficients in the function ring.
-        """
-        Fq, L = self._Fq, self.category().base_over_constants_field()
-        A = self.function_ring()
-        q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
-        T = A.gen()
-        # Compute constants that determine the block structure of the
-        # linear system. The system is prepared such that the solution
-        # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
-        # corresponding to a block of length (n*(r - i))//r + 1
-        shifts = [(n*(r - i))//r + 1 for i in range(r)]
-        rows, cols = n*r + 1, sum(shifts)
-        block_shifts = [0]
-        for i in range(r-1):
-            block_shifts.append(block_shifts[-1] + shifts[i])
-        # Compute the images \phi_T^i for i = 2 .. n.
-        gen_powers = [[1], self.coefficients(sparse=False)] \
-                     + [self(T**i).coefficients(sparse=False) for i in range(2, n + 1)]
-        sys, rhs = Matrix(L, rows, cols), vector(L, rows)
-        rhs[rows - 1] = -1
-        for j in range(r):
-            for k in range(shifts[j]):
-                for i in range(len(gen_powers[k])):
-                    sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
-        if sys.right_nullity() == 0:
-            sol = list(sys.solve_right(rhs))
-        else:
-            raise ValueError("Can't solve system for characteristic polynomial")
-        # The system is solved over L, but the coefficients should all lie in Fq
-        # We project back into Fq here.
-        sol_Fq = list(map(lambda x:
-            self.base_over_constants_field()(x).vector()[0], sol))
-        char_poly = []
-        for i in range(r):
-            char_poly.append([sol_Fq[block_shifts[i]
-                + j] for j in range(shifts[i])])
-        return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
 
     def _frobenius_charpoly_crystalline(self, var='X'):
         r"""
@@ -361,19 +269,19 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
-            sage: phi.frobenius_charpoly_crystalline()
+            sage: phi._frobenius_charpoly_crystalline()
             X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + (4*T^3 + (z2 + 2)*T^2 + (4*z2 + 2)*T + 4)*X^6 + (3*T^4 + T^3 + 3*z2*T + 3*z2 + 3)*X^5 + ((4*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + 3*T^2 + (2*z2 + 4)*T + 4*z2 + 1)*X^4 + (3*T^5 + (2*z2 + 3)*T^4 + 4*T^3 + (2*z2 + 2)*T^2 + (z2 + 3)*T + 4*z2)*X^3 + (3*T^6 + (3*z2 + 2)*T^5 + (4*z2 + 1)*T^4 + z2*T^3 + (4*z2 + 4)*T^2 + 4*z2*T)*X^2 + (2*T^7 + 3*T^6 + 2*z2*T^5 + (2*z2 + 3)*T^4 + (4*z2 + 3)*T^3 + (z2 + 2)*T^2 + (z2 + 4)*T + 2*z2 + 2)*X + T^8 + (4*z2 + 3)*T^6 + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
-            
+
             sage: Fq = GF(27)
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
             sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
-            sage: phi.frobenius_charpoly_crystalline()
+            sage: phi._frobenius_charpoly_crystalline()
             X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + (2*z3^2 + z3 + 1)*T + 2*z3^2 + z3 + 2)*X^8 + ((z3^2 + z3)*T^3 + 2*z3^2*T^2 + (2*z3^2 + z3 + 2)*T + 1)*X^7 + ((z3^2 + 2*z3)*T^4 + (2*z3^2 + 2*z3)*T^3 + (z3^2 + 1)*T^2 + (z3^2 + 1)*T + z3^2 + z3 + 2)*X^6 + ((z3^2 + z3)*T^5 + (z3^2 + 1)*T^4 + (z3^2 + 1)*T^3 + (z3^2 + 2*z3 + 1)*T^2 + (z3^2 + 2)*T + z3^2 + 2*z3 + 1)*X^5 + ((z3^2 + z3 + 1)*T^6 + (z3^2 + 2*z3 + 1)*T^5 + (2*z3^2 + z3)*T^4 + (z3^2 + 2)*T^2 + (2*z3^2 + 2*z3)*T + z3^2 + 1)*X^4 + (2*z3*T^7 + 2*z3^2*T^6 + (z3^2 + z3)*T^5 + (2*z3 + 2)*T^4 + 2*z3*T^3 + (z3 + 2)*T^2 + z3^2*T + z3^2 + 2*z3 + 1)*X^3 + (2*z3*T^8 + (z3^2 + z3)*T^7 + (2*z3^2 + z3 + 2)*T^6 + (z3^2 + 2)*T^5 + T^4 + (2*z3^2 + 2)*T^3 + (z3^2 + z3 + 1)*T^2 + (z3 + 2)*T + 2*z3^2 + z3 + 1)*X^2 + (2*z3*T^9 + z3*T^8 + (z3^2 + z3 + 1)*T^7 + T^6 + (z3^2 + 2*z3 + 2)*T^5 + (z3^2 + 2*z3 + 1)*T^4 + T^3 + (2*z3^2 + z3 + 2)*T^2 + T + 2*z3^2 + z3)*X + z3*T^10 + (z3^2 + z3)*T^9 + (2*z3^2 + 1)*T^8 + (2*z3^2 + 2*z3)*T^7 + z3*T^6 + (z3^2 + 2*z3 + 2)*T^5 + T^4 + z3*T^3 + (z3^2 + 1)*T^2 + (2*z3^2 + 2*z3 + 2)*T + z3^2
 
         ALGORITHM:
 
-        Compute the characteristic polynomial of the endomorphism
+        Compute the characteristic polynomial of the induced endomorphism
         acting on the crystalline cohomology of a Drinfeld module.
         A recurrence on elements of the cohomology allows us to
         compute a matrix representation of the Frobenius endomorphism
@@ -420,7 +328,88 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 A(list(map(lambda x:\
                 self.base_over_constants_field()(x).vector()[0], coeff))),\
                 charpoly_coeffs_L)))
-        
+
+    def _frobenius_charpoly_gekeler(self, var='X'):
+        r"""
+        Return the characteristic polynomial of the Frobenius
+        endomorphism for any rank if the minimal polynomial is
+        equal to the characteristic polynomial. Currently only
+        works for Drinfeld modules defined over Fq[T].
+
+        WARNING: This algorithm only works in the "generic" case
+                 when the corresponding linear system is invertible.
+                 Notable cases where this fails include Drinfeld
+                 modules whose minimal polynomial is not equal to
+                 the characteristic polynomial, and rank 2 Drinfeld
+                 modules where the degree 1 coefficient of \phi_T is
+                 0.
+
+        INPUT:
+
+        - ``var`` (default: ``'X'``) -- the name of the second variable
+
+        OUTPUT: a univariate polynomial with coefficients in the
+                function ring
+
+        EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(6)
+            sage: phi = DrinfeldModule(A, [z, 4, 1, z])
+            sage: phi._frobenius_charpoly_gekeler()
+            X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + (4*z2*T^3 + (2*z2 + 3)*T^2 + (2*z2 + 2)*T + z2 + 3)*X + (3*z2 + 2)*T^6 + (4*z2 + 2)*T^5 + (3*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
+
+            sage: Fq = GF(125)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(2)
+            sage: phi = DrinfeldModule(A, [z, 0, z])
+            sage: phi._frobenius_charpoly_gekeler()
+            Traceback (most recent call last):
+            ValueError: Can't solve system for characteristic polynomial
+                
+        ALGORITHM:
+
+            Construct a linear system based on the requirement that
+            the Frobenius satisfies a degree r polynomial with
+            coefficients in the function ring.
+        """
+        Fq, L = self._Fq, self.category().base_over_constants_field()
+        A = self.function_ring()
+        q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
+        T = A.gen()
+        # Compute constants that determine the block structure of the
+        # linear system. The system is prepared such that the solution
+        # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
+        # corresponding to a block of length (n*(r - i))//r + 1
+        shifts = [(n*(r - i))//r + 1 for i in range(r)]
+        rows, cols = n*r + 1, sum(shifts)
+        block_shifts = [0]
+        for i in range(r-1):
+            block_shifts.append(block_shifts[-1] + shifts[i])
+        # Compute the images \phi_T^i for i = 2 .. n.
+        gen_powers = [[1], self.coefficients(sparse=False)]\
+                     + [self(T**i).coefficients(sparse=False)\
+                     for i in range(2, n + 1)]
+        sys, rhs = Matrix(L, rows, cols), vector(L, rows)
+        rhs[rows - 1] = -1
+        for j in range(r):
+            for k in range(shifts[j]):
+                for i in range(len(gen_powers[k])):
+                    sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
+        if sys.right_nullity() != 0:
+            raise ValueError("Can't solve system for characteristic polynomial")
+        sol = list(sys.solve_right(rhs))
+        # The system is solved over L, but the coefficients should all lie in Fq
+        # We project back into Fq here.
+        sol_Fq = list(map(lambda x:
+            self.base_over_constants_field()(x).vector()[0], sol))
+        char_poly = []
+        for i in range(r):
+            char_poly.append([sol_Fq[block_shifts[i] + j]\
+                                for j in range(shifts[i])])
+        return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
+      
     def frobenius_norm(self):
         r"""
         Return Frobenius norm of the Drinfeld module, if the rank is
