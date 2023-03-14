@@ -2621,6 +2621,10 @@ REFERENCES:
 .. [Gek1991] \E.-U. Gekeler. On finite Drinfeld modules. Journal of
              algebra, 1(141):187–203, 1991.
 
+.. [Gek2008] \E.-U. Gekeler. 2008. Frobenius Distributions of Drinfeld
+             Modules over Finite Fields. Trans. Amer. Math. Soc. 360,
+             4 (2008), 1695–1721. http://www.jstor.org/stable/20161942
+
 .. [GG2012] Jim Geelen and Bert Gerards, Characterizing graphic
             matroids by a system of linear equations,
             submitted, 2012. Preprint:

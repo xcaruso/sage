@@ -306,8 +306,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return M
         C0 = prod([companion(i) for i in range(n0, 0, -1)])
         C = prod([companion(i) for i in range(nstar + n0, n0, -1)])
-        moduli = [S([ c**(q**(-i*nstar % n)) for c in mu_coeffs]) \
-                                             for i in range(1, n1) ]
+        moduli = [S([c**(q**(-i*nstar % n)) for c in mu_coeffs]) \
+                                              for i in range(1, n1) ]
 
         def reduce_and_frobenius(order, modulus):
             M = Matrix(S, r, r)
@@ -317,9 +317,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
                     M[i, j] = S([c**(q**order) \
                                 for c in reduction.coefficients(sparse=False)])
             return M
-        reduced_companions = [reduce_and_frobenius(i*nstar, moduli[i-1]) \
+        reduced_companions = [reduce_and_frobenius(i * nstar, moduli[i-1]) \
                                 for i in range(n1 - 1, 0, -1)]
-        charpoly_coeffs_L = (prod(reduced_companions)*C*C0).charpoly(var)\
+        charpoly_coeffs_L = (prod(reduced_companions) * C * C0).charpoly(var)\
                             .coefficients(sparse=False)
         # The above line obtains a char poly with coefficients in L[T]
         # This maps them into A
@@ -372,7 +372,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
             Construct a linear system based on the requirement that
             the Frobenius satisfies a degree r polynomial with
-            coefficients in the function ring.
+            coefficients in the function ring. This generalizes the
+            procedure from [Gek2008]_ for the rank 2 case.
         """
         Fq, L = self._Fq, self.category().base_over_constants_field()
         A = self.function_ring()
@@ -387,10 +388,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         block_shifts = [0]
         for i in range(r-1):
             block_shifts.append(block_shifts[-1] + shifts[i])
-        # Compute the images \phi_T^i for i = 2 .. n.
-        gen_powers = [[1], self.coefficients(sparse=False)]\
-                     + [self(T**i).coefficients(sparse=False)\
-                     for i in range(2, n + 1)]
+        # Compute the images \phi_T^i for i = 0 .. n.
+        gen_powers = [self(T**i).coefficients(sparse=False)\
+                        for i in range(0, n + 1)]
         sys, rhs = Matrix(L, rows, cols), vector(L, rows)
         rhs[rows - 1] = -1
         for j in range(r):
