@@ -242,7 +242,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             This wrapper dispatches the characteristic polynomial
             computation to the method implementing the corresponding
             algorithm. By default chooses the 'crystalline' algorithm.
-            See the corresponding docstring for each method for details.
+            See the corresponding docstringfor each method for details.
         """
         algorithms = {'gekeler', 'crystalline'}
         if algorithm in algorithms:
@@ -252,12 +252,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def _frobenius_charpoly_crystalline(self, var='X'):
         r"""
-        Method to compute the characteristic polynomial of the
-        Frobenius endomorphism using Crystalline cohomology.
-        Currently only works for Drinfeld modules defined over
-        Fq[T], but otherwise does not impose any other constraints,
-        including on the rank, minimal polynomial, or that the Drinfeld
-        module is defined over the prime field.
+        Return the characteristic polynomial of the Frobenius 
+        endomorphism using Crystalline cohomology. Currently only
+        works for Drinfeld modules defined over Fq[T], but otherwise
+        does not impose any other constraints, including on the rank,
+        minimal polynomial, or that the Drinfeld module is defined
+        over the prime field.
 
         INPUT:
 
@@ -270,20 +270,21 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
             sage: phi._frobenius_charpoly_crystalline()
-            X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + (4*T^3 + (z2 + 2)*T^2 + (4*z2 + 2)*T + 4)*X^6 + (3*T^4 + T^3 + 3*z2*T + 3*z2 + 3)*X^5 + ((4*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + 3*T^2 + (2*z2 + 4)*T + 4*z2 + 1)*X^4 + (3*T^5 + (2*z2 + 3)*T^4 + 4*T^3 + (2*z2 + 2)*T^2 + (z2 + 3)*T + 4*z2)*X^3 + (3*T^6 + (3*z2 + 2)*T^5 + (4*z2 + 1)*T^4 + z2*T^3 + (4*z2 + 4)*T^2 + 4*z2*T)*X^2 + (2*T^7 + 3*T^6 + 2*z2*T^5 + (2*z2 + 3)*T^4 + (4*z2 + 3)*T^3 + (z2 + 2)*T^2 + (z2 + 4)*T + 2*z2 + 2)*X + T^8 + (4*z2 + 3)*T^6 + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
+            X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + ... + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
 
             sage: Fq = GF(27)
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
             sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
             sage: phi._frobenius_charpoly_crystalline()
-            X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + (2*z3^2 + z3 + 1)*T + 2*z3^2 + z3 + 2)*X^8 + ((z3^2 + z3)*T^3 + 2*z3^2*T^2 + (2*z3^2 + z3 + 2)*T + 1)*X^7 + ((z3^2 + 2*z3)*T^4 + (2*z3^2 + 2*z3)*T^3 + (z3^2 + 1)*T^2 + (z3^2 + 1)*T + z3^2 + z3 + 2)*X^6 + ((z3^2 + z3)*T^5 + (z3^2 + 1)*T^4 + (z3^2 + 1)*T^3 + (z3^2 + 2*z3 + 1)*T^2 + (z3^2 + 2)*T + z3^2 + 2*z3 + 1)*X^5 + ((z3^2 + z3 + 1)*T^6 + (z3^2 + 2*z3 + 1)*T^5 + (2*z3^2 + z3)*T^4 + (z3^2 + 2)*T^2 + (2*z3^2 + 2*z3)*T + z3^2 + 1)*X^4 + (2*z3*T^7 + 2*z3^2*T^6 + (z3^2 + z3)*T^5 + (2*z3 + 2)*T^4 + 2*z3*T^3 + (z3 + 2)*T^2 + z3^2*T + z3^2 + 2*z3 + 1)*X^3 + (2*z3*T^8 + (z3^2 + z3)*T^7 + (2*z3^2 + z3 + 2)*T^6 + (z3^2 + 2)*T^5 + T^4 + (2*z3^2 + 2)*T^3 + (z3^2 + z3 + 1)*T^2 + (z3 + 2)*T + 2*z3^2 + z3 + 1)*X^2 + (2*z3*T^9 + z3*T^8 + (z3^2 + z3 + 1)*T^7 + T^6 + (z3^2 + 2*z3 + 2)*T^5 + (z3^2 + 2*z3 + 1)*T^4 + T^3 + (2*z3^2 + z3 + 2)*T^2 + T + 2*z3^2 + z3)*X + z3*T^10 + (z3^2 + z3)*T^9 + (2*z3^2 + 1)*T^8 + (2*z3^2 + 2*z3)*T^7 + z3*T^6 + (z3^2 + 2*z3 + 2)*T^5 + T^4 + z3*T^3 + (z3^2 + 1)*T^2 + (2*z3^2 + 2*z3 + 2)*T + z3^2
+            X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + ... + (2*z3^2 + 2*z3 + 2)*T + z3^2
 
         ALGORITHM:
 
-        Compute the characteristic polynomial of the induced endomorphism
-        acting on the crystalline cohomology of a Drinfeld module.
-        A recurrence on elements of the cohomology allows us to
+        Compute the characteristic polynomial of the Frobenius endomorphism
+        acting on the crystalline cohomology of a Drinfeld module, which
+        is equal to that of the Frobenius endomorphism on the Drinfeld
+        module. A recurrence on elements of the cohomology allows us to
         compute a matrix representation of the Frobenius endomorphism
         efficiently using a companion matrix method.
         """
@@ -293,32 +294,28 @@ class FiniteDrinfeldModule(DrinfeldModule):
         nstar = ceil(sqrt(n))
         n1, n0 = n // nstar, n % nstar
         dm = self.coefficients(sparse=False)
-        rec_coeffs = [dm[i]/dm[r] for i in range(r)]
         S = PolynomialRing(L, name=str(A.gen()))
         SM = MatrixSpace(S, r, r)
         mu_coeffs = ((S.gen() - dm[0])**(n+1)).coefficients(sparse=False)
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
-            M = SM(companion_matrix([c**(q**order) for c in rec_coeffs] + [1],\
-                format = 'top'))
+            M = SM(companion_matrix([(dm[i]/dm[r])**(q**order)\
+                    for i in range(r)] + [1], format = 'top'))
             M[0, r-1] += S.gen() / dm[r]**(q**order)
             return M
         C0 = prod([companion(i) for i in range(n0, 0, -1)])
         C = prod([companion(i) for i in range(nstar + n0, n0, -1)])
-        moduli = [S([c**(q**(-i*nstar % n)) for c in mu_coeffs]) \
-                                              for i in range(1, n1) ]
-
-        def reduce_and_frobenius(order, modulus):
+        reduced_companions = []
+        for k in range(n1 - 1, 0, -1):
             M = Matrix(S, r, r)
             for i, row in enumerate(C):
                 for j, entry in enumerate(row):
-                    reduction = entry % modulus
-                    M[i, j] = S([c**(q**order) \
+                    reduction = entry % S([c**(q**(-k*nstar % n))
+                                        for c in mu_coeffs])
+                    M[i, j] = S([c**(q**(k*nstar)) \
                                 for c in reduction.coefficients(sparse=False)])
-            return M
-        reduced_companions = [reduce_and_frobenius(i * nstar, moduli[i-1]) \
-                                for i in range(n1 - 1, 0, -1)]
+            reduced_companions.append(M)
         charpoly_coeffs_L = (prod(reduced_companions) * C * C0).charpoly(var)\
                             .coefficients(sparse=False)
         # The above line obtains a char poly with coefficients in L[T]
@@ -336,13 +333,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
         equal to the characteristic polynomial. Currently only
         works for Drinfeld modules defined over Fq[T].
 
-        WARNING: This algorithm only works in the "generic" case
-                 when the corresponding linear system is invertible.
-                 Notable cases where this fails include Drinfeld
-                 modules whose minimal polynomial is not equal to
-                 the characteristic polynomial, and rank 2 Drinfeld
-                 modules where the degree 1 coefficient of \phi_T is
-                 0.
+        .. WARNING:
+
+            This algorithm only works in the generic case
+            when the corresponding linear system is invertible.
+            Notable cases where this fails include Drinfeld
+            modules whose minimal polynomial is not equal to
+            the characteristic polynomial, and rank 2 Drinfeld
+            modules where the degree 1 coefficient of `\phi_T` is 0.
 
         INPUT:
 
@@ -358,7 +356,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z> = Fq.extension(6)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z])
             sage: phi._frobenius_charpoly_gekeler()
-            X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + (4*z2*T^3 + (2*z2 + 3)*T^2 + (2*z2 + 2)*T + z2 + 3)*X + (3*z2 + 2)*T^6 + (4*z2 + 2)*T^5 + (3*z2 + 2)*T^4 + (3*z2 + 4)*T^3 + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
+            X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + ... + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
 
             sage: Fq = GF(125)
             sage: A.<T> = Fq[]
@@ -366,7 +364,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi = DrinfeldModule(A, [z, 0, z])
             sage: phi._frobenius_charpoly_gekeler()
             Traceback (most recent call last):
-            ValueError: Can't solve system for characteristic polynomial
+            NotImplementedError: Can't solve system for characteristic polynomial
                 
         ALGORITHM:
 
@@ -378,7 +376,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Fq, L = self._Fq, self.category().base_over_constants_field()
         A = self.function_ring()
         q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
-        T = A.gen()
         # Compute constants that determine the block structure of the
         # linear system. The system is prepared such that the solution
         # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
@@ -389,7 +386,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         for i in range(r-1):
             block_shifts.append(block_shifts[-1] + shifts[i])
         # Compute the images \phi_T^i for i = 0 .. n.
-        gen_powers = [self(T**i).coefficients(sparse=False)\
+        gen_powers = [self(A.gen()**i).coefficients(sparse=False)\
                         for i in range(0, n + 1)]
         sys, rhs = Matrix(L, rows, cols), vector(L, rows)
         rhs[rows - 1] = -1
@@ -398,7 +395,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 for i in range(len(gen_powers[k])):
                     sys[i + n*j, block_shifts[j] + k] = gen_powers[k][i]
         if sys.right_nullity() != 0:
-            raise ValueError("Can't solve system for characteristic polynomial")
+            raise NotImplementedError(\
+                    "Can't solve system for characteristic polynomial")
         sol = list(sys.solve_right(rhs))
         # The system is solved over L, but the coefficients should all lie in Fq
         # We project back into Fq here.
