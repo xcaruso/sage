@@ -252,7 +252,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def _frobenius_charpoly_crystalline(self, var='X'):
         r"""
-        Return the characteristic polynomial of the Frobenius 
+        Return the characteristic polynomial of the Frobenius
         endomorphism using Crystalline cohomology. Currently only
         works for Drinfeld modules defined over Fq[T], but otherwise
         does not impose any other constraints, including on the rank,
