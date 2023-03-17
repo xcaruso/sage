@@ -192,7 +192,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         endomorphism.
 
         Let `\mathbb{F}_q` be the base field of the function ring. The
-        *characteristic polynomial `\chi` of the Frobenius endomorphism*
+        *characteristic polynomial* `\chi` *of the Frobenius endomorphism*
         is defined in [Gek1991]_. An important feature of this
         polynomial is that it is a monic univariate polynomial with
         coefficients in the function ring. As in our case the function
@@ -214,6 +214,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         INPUT:
 
         - ``var`` (default: ``'X'``) -- the name of the second variable
+        - ``algorithm`` (default: ``'crystalline'``) -- the algorithm used to compute
+            the characteristic polynomial
 
         EXAMPLES::
 
@@ -292,7 +294,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         compute a matrix representation of the Frobenius endomorphism
         efficiently using a companion matrix method.
         """
-        Fq, L = self._Fq, self.category().base_over_constants_field()
+        Fq, L = self._Fq, self.base_over_constants_field()
         A = self.function_ring()
         q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
         nstar = ceil(sqrt(n))
@@ -326,8 +328,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # This maps them into A
         return PolynomialRing(A, name=var)(
                 list(map(lambda coeff:\
-                A(list(map(lambda x:\
-                self.base_over_constants_field()(x).vector()[0], coeff))),\
+                A(list(map(lambda x: L(x).vector()[0], coeff))),\
                 charpoly_coeffs_L)))
 
     def _frobenius_charpoly_gekeler(self, var='X'):
@@ -377,9 +378,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
             coefficients in the function ring. This generalizes the
             procedure from [Gek2008]_ for the rank 2 case.
         """
-        Fq, L = self._Fq, self.category().base_over_constants_field()
+        Fq, L = self._Fq, self.base_over_constants_field()
         A = self.function_ring()
-        q, r, n = Fq.cardinality(), self.rank(), L.degree(Fq)
+        r, n = self.rank(), L.degree(Fq)
         # Compute constants that determine the block structure of the
         # linear system. The system is prepared such that the solution
         # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
@@ -404,8 +405,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sol = list(sys.solve_right(rhs))
         # The system is solved over L, but the coefficients should all lie in Fq
         # We project back into Fq here.
-        sol_Fq = list(map(lambda x:
-            self.base_over_constants_field()(x).vector()[0], sol))
+        sol_Fq = list(map(lambda x: L(x).vector()[0], sol))
         char_poly = []
         for i in range(r):
             char_poly.append([sol_Fq[block_shifts[i] + j]\
