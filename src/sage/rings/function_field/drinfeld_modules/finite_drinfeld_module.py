@@ -200,16 +200,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
         characteristic polynomial of the Frobenius endomorphism as a
         bivariate polynomial.
 
-        Let `\chi = X^2 - A(T)X + B(T)` be the characteristic polynomial
-        of the Frobenius endomorphism, and let `t^n` be the Ore polynomial
-        that defines the Frobenius endomorphism of `\phi`; by
-        definition, `n` is the degree over of the base field over
-        `\mathbb{F}_q`. We have `\chi(t^n)(\phi(T)) = t^{2n} - \phi_A
-        t^n + \phi_B = 0`, with `\deg(A) \leq \frac{n}{2}` and `\deg(B)
-        = n`.
+        Let `\chi = X^r + \sum_{i=1}^{r} A_{i}(T)X^{r-i}` be the
+        characteristic polynomial of the Frobenius endomorphism, and
+        let `t^n` be the Ore polynomial that defines the Frobenius
+        endomorphism of `\phi`; by definition, `n` is the degree of `K`
+        over the base field `\mathbb{F}_q`. Then we have `\chi(t^n)(\phi(T))
+        = t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)} = 0`, with `\deg(A_i)
+        \leq \frac{ir}{n}`.
 
-        Note that the *Frobenius trace* is defined as `A(T)` and the
-        *Frobenius norm* is defined as `B(T)`.
+        Note that the *Frobenius trace* is defined as `A_1(T)` and the
+        *Frobenius norm* is defined as `A_r(T)`.
 
         INPUT:
 
@@ -239,10 +239,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ALGORITHM:
 
-            This wrapper dispatches the characteristic polynomial
-            computation to the method implementing the corresponding
-            algorithm. By default chooses the 'crystalline' algorithm.
-            See the corresponding docstringfor each method for details.
+            By default, this method uses the *crystalline* algorithm which
+            computes the characteristic polynomial of the Frobenius acting
+            on the crystalline cohomology of the Drinfeld module. For further
+            details, see [Ang1997]_. Currently, the only alternative is to use
+            the *gekeler* approach based on solving the linear system given by
+            `t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)} = 0`. For more
+            details, see [Gek2008]_.
+
         """
         algorithms = {'gekeler', 'crystalline'}
         if algorithm in algorithms:

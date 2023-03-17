@@ -242,6 +242,10 @@ REFERENCES:
               Symposium, Volume 51, page 20.
               Australian Computer Society, Inc. 2006.
 
+.. [Ang1997] B. Anglès. 1997. *On some characteristic polynomials attached to
+             finite Drinfeld modules.* manuscripta mathematica 93, 1 (01 Aug 1997),
+             369–379. https://doi.org/10.1007/BF02677478
+
 .. [AP1986] \S. Arnborg, A. Proskurowski,
             *Characterization and Recognition of Partial 3-Trees*,
             SIAM Journal of Alg. and Discrete Methods,
@@ -2618,11 +2622,11 @@ REFERENCES:
             TR-737-05, (2005).
             ftp://ftp.cs.princeton.edu/reports/2005/737.pdf
 
-.. [Gek1991] \E.-U. Gekeler. On finite Drinfeld modules. Journal of
+.. [Gek1991] \E.-U. Gekeler. *On finite Drinfeld modules.* Journal of
              algebra, 1(141):187–203, 1991.
 
-.. [Gek2008] \E.-U. Gekeler. 2008. Frobenius Distributions of Drinfeld
-             Modules over Finite Fields. Trans. Amer. Math. Soc. 360,
+.. [Gek2008] \E.-U. Gekeler. 2008. *Frobenius Distributions of Drinfeld
+             Modules over Finite Fields.* Trans. Amer. Math. Soc. 360,
              4 (2008), 1695–1721. http://www.jstor.org/stable/20161942
 
 .. [GG2012] Jim Geelen and Bert Gerards, Characterizing graphic
