@@ -618,6 +618,60 @@ class FiniteDrinfeldModule(DrinfeldModule):
             raise ValueError('input must be in the image of the Drinfeld '
                              'module')
 
+    def is_isogenous(self, psi):
+        r"""
+        Return ``True`` only when ``self`` is isogenous to the other
+        Drinfeld module `\psi`. Throws an error if the two Drinfeld
+        modules are incomparable due to not being members of the same
+        category.
+
+        EXAMPLES::
+
+        sage: Fq = GF(2)
+        sage: A.<T> = Fq[]
+        sage: K.<z> = Fq.extension(3)
+        sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+        sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+        sage: phi.is_isogenous(psi)
+        True
+
+        ::
+
+        sage: chi = DrinfeldModule(A, [z, z + 1, z^2 + z])
+        sage: phi.is_isogenous(chi)
+        False
+
+        ::
+
+        sage: mu = DrinfeldModule(A, [z + 1, z^2 + z + 1, z^2 + z])
+        sage: phi.is_isogenous(mu)
+        Traceback (most recent call last):
+        TypeError: Drinfeld modules are not in the same category
+
+        ::
+
+        sage: mu = 1
+        sage: phi.is_isogenous(mu)
+        Traceback (most recent call last):
+        TypeError: Input must be a Drinfeld module
+
+        ALGORITHM:
+
+        Two Drinfeld A-modules of equal characteristic are isogenous
+        if and only if:
+
+        - they have the same rank
+        - the characteristic polynomial of the Frobenius endomorphism
+          for both Drinfeld modules are equal.
+
+        """
+        if not isinstance(psi, DrinfeldModule):
+            raise TypeError("Input must be a Drinfeld module")
+        if self.category() != psi.category():
+            raise TypeError("Drinfeld modules are not in the same category")
+        return self.rank() == psi.rank() and\
+                self.frobenius_charpoly() == psi.frobenius_charpoly()
+
     def is_ordinary(self):
         r"""
         Return ``True`` whether the Drinfeld module is ordinary; raise a
