@@ -627,33 +627,33 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         EXAMPLES::
 
-        sage: Fq = GF(2)
-        sage: A.<T> = Fq[]
-        sage: K.<z> = Fq.extension(3)
-        sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
-        sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
-        sage: phi.is_isogenous(psi)
-        True
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: phi.is_isogenous(psi)
+            True
 
         ::
 
-        sage: chi = DrinfeldModule(A, [z, z + 1, z^2 + z])
-        sage: phi.is_isogenous(chi)
-        False
+            sage: chi = DrinfeldModule(A, [z, z + 1, z^2 + z])
+            sage: phi.is_isogenous(chi)
+            False
 
         ::
 
-        sage: mu = DrinfeldModule(A, [z + 1, z^2 + z + 1, z^2 + z])
-        sage: phi.is_isogenous(mu)
-        Traceback (most recent call last):
-        TypeError: Drinfeld modules are not in the same category
+            sage: mu = DrinfeldModule(A, [z + 1, z^2 + z + 1, z^2 + z])
+            sage: phi.is_isogenous(mu)
+            Traceback (most recent call last):
+            TypeError: Drinfeld modules are not in the same category
 
         ::
 
-        sage: mu = 1
-        sage: phi.is_isogenous(mu)
-        Traceback (most recent call last):
-        TypeError: Input must be a Drinfeld module
+            sage: mu = 1
+            sage: phi.is_isogenous(mu)
+            Traceback (most recent call last):
+            TypeError: Input must be a Drinfeld module
 
         ALGORITHM:
 
