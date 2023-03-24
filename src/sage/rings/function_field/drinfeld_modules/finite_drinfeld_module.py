@@ -204,9 +204,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
         characteristic polynomial of the Frobenius endomorphism, and
         let `t^n` be the Ore polynomial that defines the Frobenius
         endomorphism of `\phi`; by definition, `n` is the degree of `K`
-        over the base field `\mathbb{F}_q`. Then we have `\chi(t^n)(\phi(T))
-        = t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)} = 0`, with `\deg(A_i)
-        \leq \frac{ir}{n}`.
+        over the base field `\mathbb{F}_q`. Then we have
+
+        .. MATH::
+
+            \chi(t^n)(\phi(T))
+            = t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)}
+            = 0,
+
+        with `\deg(A_i) \leq \frac{ir}{n}`.
 
         Note that the *Frobenius trace* is defined as `A_1(T)` and the
         *Frobenius norm* is defined as `A_r(T)`.
