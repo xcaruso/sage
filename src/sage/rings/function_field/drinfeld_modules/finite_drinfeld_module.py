@@ -258,8 +258,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         algorithms = {'gekeler', 'crystalline'}
         if algorithm in algorithms:
-            return getattr(self, \
-                    f'_frobenius_charpoly_{algorithm}')(var)
+            return getattr(self,
+                           f'_frobenius_charpoly_{algorithm}')(var)
         raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
 
     def _frobenius_charpoly_crystalline(self, var='X'):
