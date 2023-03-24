@@ -329,7 +329,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 for j, entry in enumerate(row):
                     reduction = entry % S([c**(q**(-k*nstar % n))
                                         for c in mu_coeffs])
-                    M[i, j] = S([c**(q**(k*nstar)) \
+                    M[i, j] = S([c**(q**(k*nstar))
                                 for c in reduction.coefficients(sparse=False)])
             reduced_companions.append(M)
         charpoly_coeffs_L = (prod(reduced_companions) * C * C0).charpoly(var)\
