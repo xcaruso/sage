@@ -344,9 +344,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
     def _frobenius_charpoly_gekeler(self, var='X'):
         r"""
         Return the characteristic polynomial of the Frobenius
-        endomorphism for any rank if the minimal polynomial is
-        equal to the characteristic polynomial. Currently only
-        works for Drinfeld modules defined over Fq[T].
+        endomorphism using Gekeler's algorithm.
+
+        The algorithm works for Drinfeld `\mathbb{F}_q[T]`-modules of
+        any rank, provided that the constant coefficient is a generator
+        of the base field.
+
+        This method is private and should not be directly called.
+        Instead, use :meth:`frobenius_charpoly`.
 
         .. WARNING:
 
