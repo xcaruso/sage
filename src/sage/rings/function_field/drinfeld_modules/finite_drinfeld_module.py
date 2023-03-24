@@ -265,11 +265,13 @@ class FiniteDrinfeldModule(DrinfeldModule):
     def _frobenius_charpoly_crystalline(self, var='X'):
         r"""
         Return the characteristic polynomial of the Frobenius
-        endomorphism using Crystalline cohomology. Currently only
-        works for Drinfeld modules defined over Fq[T], but otherwise
-        does not impose any other constraints, including on the rank,
-        minimal polynomial, or that the Drinfeld module is defined
-        over the prime field.
+        endomorphism using Crystalline cohomology.
+
+        The algorithm works for Drinfeld `\mathbb{F}_q[T]`-modules of
+        any rank.
+
+        This method is private and should not be directly called.
+        Instead, use :meth:`frobenius_charpoly`.
 
         INPUT:
 
