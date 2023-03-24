@@ -328,7 +328,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             for i, row in enumerate(C):
                 for j, entry in enumerate(row):
                     reduction = entry % S([c**(q**(-k*nstar % n))
-                                        for c in mu_coeffs])
+                                          for c in mu_coeffs])
                     M[i, j] = S([c**(q**(k*nstar))
                                 for c in reduction.coefficients(sparse=False)])
             reduced_companions.append(M)
