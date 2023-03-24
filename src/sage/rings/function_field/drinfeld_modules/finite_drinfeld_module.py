@@ -414,8 +414,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sol_Fq = list(map(lambda x: L(x).vector()[0], sol))
         char_poly = []
         for i in range(r):
-            char_poly.append([sol_Fq[block_shifts[i] + j]\
-                                for j in range(shifts[i])])
+            char_poly.append([sol_Fq[block_shifts[i] + j]
+                              for j in range(shifts[i])])
         return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
     def frobenius_norm(self):
         r"""
