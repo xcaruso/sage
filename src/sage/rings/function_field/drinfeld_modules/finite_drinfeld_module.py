@@ -417,7 +417,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
             char_poly.append([sol_Fq[block_shifts[i] + j]\
                                 for j in range(shifts[i])])
         return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
-      
     def frobenius_norm(self):
         r"""
         Return Frobenius norm of the Drinfeld module, if the rank is
