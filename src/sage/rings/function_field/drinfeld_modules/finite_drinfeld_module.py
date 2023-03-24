@@ -247,13 +247,13 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ALGORITHM:
 
-            By default, this method uses the *crystalline* algorithm which
-            computes the characteristic polynomial of the Frobenius acting
-            on the crystalline cohomology of the Drinfeld module. For further
-            details, see [Ang1997]_. Currently, the only alternative is to use
-            the *gekeler* approach based on solving the linear system given by
-            `t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)} = 0`. For more
-            details, see [Gek2008]_.
+        By default, this method uses the so-called *crystalline*
+        algorithm which computes the characteristic polynomial of the
+        Frobenius acting on the crystalline cohomology of the Drinfeld
+        module. For further details, see [Ang1997]_. Currently, the only
+        alternative is to use the *gekeler* approach based on solving
+        the linear system given by `t^{nr} + \sum_{i=1}^{r}
+        \phi_{A_{i}}t^{n(r-i)} = 0`. For more details, see [Gek2008]_.t
 
         """
         algorithms = {'gekeler', 'crystalline'}
