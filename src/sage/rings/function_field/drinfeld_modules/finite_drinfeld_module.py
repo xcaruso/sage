@@ -286,6 +286,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi._frobenius_charpoly_crystalline()
             X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + ... + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
 
+            ::
+
             sage: Fq = GF(27)
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
