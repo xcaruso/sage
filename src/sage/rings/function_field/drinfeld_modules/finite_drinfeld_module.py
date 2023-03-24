@@ -220,8 +220,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         INPUT:
 
         - ``var`` (default: ``'X'``) -- the name of the second variable
-        - ``algorithm`` (default: ``'crystalline'``) -- the algorithm used to compute
-            the characteristic polynomial
+        - ``algorithm`` (default: ``'crystalline'``) -- the algorithm
+          used to compute the characteristic polynomial
 
         EXAMPLES::
 
