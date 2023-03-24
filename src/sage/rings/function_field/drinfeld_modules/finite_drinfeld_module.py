@@ -634,10 +634,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def is_isogenous(self, psi):
         r"""
-        Return ``True`` only when ``self`` is isogenous to the other
-        Drinfeld module `\psi`. Throws an error if the two Drinfeld
-        modules are incomparable due to not being members of the same
-        category.
+        Return ``True`` whethere ``self`` is isogenous to the other
+        Drinfeld module.
+
+        If the Drinfeld modules do not belong to the same category, an
+        exception is raised.
 
         EXAMPLES::
 
