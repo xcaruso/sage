@@ -316,8 +316,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
-            M = SM(companion_matrix([(dm[i]/dm[r])**(q**order)\
-                    for i in range(r)] + [1], format = 'top'))
+            M = SM(companion_matrix([(dm[i]/dm[r])**(q**order)
+                                    for i in range(r)] + [1], format='top'))
             M[0, r-1] += S.gen() / dm[r]**(q**order)
             return M
         C0 = prod([companion(i) for i in range(n0, 0, -1)])
