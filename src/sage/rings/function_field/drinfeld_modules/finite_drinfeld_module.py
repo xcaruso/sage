@@ -406,8 +406,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         for i in range(r-1):
             block_shifts.append(block_shifts[-1] + shifts[i])
         # Compute the images \phi_T^i for i = 0 .. n.
-        gen_powers = [self(A.gen()**i).coefficients(sparse=False)\
-                        for i in range(0, n + 1)]
+        gen_powers = [self(A.gen()**i).coefficients(sparse=False)
+                      for i in range(0, n + 1)]
         sys, rhs = Matrix(L, rows, cols), vector(L, rows)
         rhs[rows - 1] = -1
         for j in range(r):
