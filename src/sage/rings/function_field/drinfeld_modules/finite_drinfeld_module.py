@@ -388,10 +388,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 
         ALGORITHM:
 
-            Construct a linear system based on the requirement that
-            the Frobenius satisfies a degree r polynomial with
-            coefficients in the function ring. This generalizes the
-            procedure from [Gek2008]_ for the rank 2 case.
+        Construct a linear system based on the requirement that the
+        Frobenius satisfies a degree r polynomial with coefficients in
+        the function ring. This generalizes the procedure from
+        [Gek2008]_ for the rank 2 case.
         """
         Fq, L = self._Fq, self.base_over_constants_field()
         A = self.function_ring()
