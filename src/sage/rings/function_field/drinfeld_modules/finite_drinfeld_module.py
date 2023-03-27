@@ -28,7 +28,7 @@ from sage.modules.free_module_element import vector
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
 from sage.functions.other import ceil, sqrt
-from sage.all import prod
+from sage.misc.misc_c import prod
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
