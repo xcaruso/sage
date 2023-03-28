@@ -785,3 +785,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         self._check_rank_two()
         return self.characteristic().divides(self.frobenius_trace())
+
+    def isogeny(self, psi, deg):
+        r"""
+        Return an isogeny of given degree if one exists, otherwise return
+        None.
+        """
+
+        Fq = self._Fq
+        K = self.base_over_constants_field()
+        A = self.function_ring()
+        r, n = self.rank(), K.degree(Fq)
+
