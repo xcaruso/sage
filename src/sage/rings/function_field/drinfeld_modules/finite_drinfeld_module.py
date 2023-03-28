@@ -154,8 +154,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # added one to ensure that FiniteDrinfeldModule would always
         # have _frobenius_norm and _frobenius_trace attributes.
         super().__init__(gen, category)
-        self._frobenius_norm = None
-        self._frobenius_trace = None
+        self._frobenius_charpoly = None
 
     def frobenius_endomorphism(self):
         r"""
@@ -262,14 +261,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
         module. For further details, see [Ang1997]_. Currently, the only
         alternative is to use the *gekeler* approach based on solving
         the linear system given by `t^{nr} + \sum_{i=1}^{r}
-        \phi_{A_{i}}t^{n(r-i)} = 0`. For more details, see [Gek2008]_.t
-
+        \phi_{A_{i}}t^{n(r-i)} = 0`. For more details, see [Gek2008]_.
         """
         methods = [method for method in dir(self)
                    if method.startswith('_frobenius_charpoly_')]
         method_name = f'_frobenius_charpoly_{algorithm}'
         if method_name in methods:
-            return getattr(self, method_name)(var)
+            if self._frobenius_charpoly is not None:
+                return self._frobenius_charpoly
+            self._frobenius_charpoly = getattr(self, method_name)(var)
+            return self._frobenius_charpoly
         raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
 
     def _frobenius_charpoly_crystalline(self, var='X'):
@@ -457,15 +458,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def frobenius_norm(self):
         r"""
-        Return Frobenius norm of the Drinfeld module, if the rank is
-        two, raise a NotImplementedError otherwise.
+        Return the Frobenius norm of the Drinfeld module.
 
-        Let `\mathbb{F}_q[T]` be the function ring, write `\chi = X^2 -
-        A(T)X + B(T) \in \mathbb{F}_q[T][X]` for the characteristic
-        polynomial of the Frobenius endomorphism. The *Frobenius norm*
-        is defined as the polynomial `B(T) \in \mathbb{F}_q[T]`.
-
-        Let `n` be the degree of the base field over `\mathbb{F}_q` Then the
+        Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
+        polynomial of the Frobenius endomorphism. The Frobenius norm
+        is `(-1)^r a_{r}`. This is an element of the regular function ring
+        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
         Frobenius norm has degree `n`.
 
         EXAMPLES::
@@ -494,31 +492,19 @@ class FiniteDrinfeldModule(DrinfeldModule):
             The Frobenius norm is computed using the formula, by
             Gekeler, given in [MS2019]_, Section 4, Proposition 3.
         """
-        self._check_rank_two()
-        L = self._base.over(self._Fq)
-        # Notations from Schost-Musleh:
-        if self._frobenius_norm is None:
-            n = L.degree_over(self._Fq)
-            d = self.characteristic().degree()
-            m = n // d
-            delta = self._gen[2]
-            norm = L(delta).norm()
-            char = self.characteristic()
-            self._frobenius_norm = ((-1)**n) * (char**m) / norm
-        return self._frobenius_norm
+        return ((-1)**(self.rank() % 2)) * \
+               self.frobenius_charpoly().coefficients(sparse=False)[0]
 
     def frobenius_trace(self):
         r"""
-        Return Frobenius norm of the Drinfeld module, if the rank is
+        Return Frobenius trace of the Drinfeld module, if the rank is
         two; raise a NotImplementedError otherwise.
 
-        Let `\mathbb{F}_q[T]` be the function ring, write `\chi = T^2 -
-        A(X)T + B(X) \in \mathbb{F}_q[T][X]` for the characteristic
-        polynomial of the Frobenius endomorphism. The *Frobenius trace*
-        is defined as the polynomial `A(T) \in \mathbb{F}_q[T]`.
-
-        Let `n` be the degree over `\mathbb{F}_q` of the base codomain.
-        Then the Frobenius trace has degree at most `\frac{n}{2}`.
+        Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
+        polynomial of the Frobenius endomorphism. The Frobenius trace
+        is `-a_{1}`. This is an element of the regular function ring
+        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
+        Frobenius trace has degree at most `\frac{n}{r}`.
 
         EXAMPLES::
 
@@ -543,25 +529,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ALGORITHM:
 
-            Let `A(T)` denote the Frobenius trace and `B(T)` denote the
-            Frobenius norm. We begin by computing `B(T)`, see docstring
-            of method :meth:`frobenius_norm` for details. The
-            characteristic polynomial of the Frobenius yields `t^{2n} -
-            \phi_A t^n + \phi_B = 0`, where `t^n` is the Frobenius
-            endomorphism. As `\phi_B` is now known, we can compute
-            `\phi_A = (t^{2n} + \phi_B) / t^n`. We get `A(T)` by
-            inverting this quantity, using the method
-            :meth:`sage.rings.function_fields.drinfeld_module.drinfeld_module.DrinfeldModule.invert`,
-            see its docstring for details.
+            We extract the coefficient of `X^{r-1}` from the
+            characteristic polynomial.
         """
-        self._check_rank_two()
-        # Notations from Schost-Musleh:
-        if self._frobenius_trace is None:
-            n = self._base.over(self._Fq).degree_over(self._Fq)
-            B = self.frobenius_norm()
-            t = self.ore_polring().gen()
-            self._frobenius_trace = self.invert(t**n + (self(B) // t**n))
-        return self._frobenius_trace
+        return -self.frobenius_charpoly().coefficients(sparse=False)[-2]
 
     def invert(self, ore_pol):
         r"""
@@ -707,7 +678,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
         - they have the same rank
         - the characteristic polynomial of the Frobenius endomorphism
           for both Drinfeld modules are equal.
-
         """
         if not isinstance(psi, DrinfeldModule):
             raise TypeError("Input must be a Drinfeld module")
@@ -750,7 +720,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
             `\mathbb{F}_q[T]`-characteristic under the Drinfeld module
             is purely inseparable; see [Gek1991]_, Proposition 4.1.
         """
-        self._check_rank_two()
         return not self.is_supersingular()
 
     def is_supersingular(self):
@@ -783,7 +752,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
             ring-characteristic under the Drinfeld module is purely
             inseparable; see [Gek1991]_, Proposition 4.1.
         """
-        self._check_rank_two()
         return self.characteristic().divides(self.frobenius_trace())
 
     def isogeny(self, psi, deg):
