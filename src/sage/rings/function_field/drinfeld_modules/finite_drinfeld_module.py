@@ -796,4 +796,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         K = self.base_over_constants_field()
         A = self.function_ring()
         r, n = self.rank(), K.degree(Fq)
-
+        z = K.gen()
+        frob = Matrix(Fq, n, n)
+        frob[0, 0] = 1
+        for i in range(1, n + 1):
+            col = z**i
