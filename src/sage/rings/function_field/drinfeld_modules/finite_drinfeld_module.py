@@ -29,6 +29,7 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
 from sage.functions.other import ceil, sqrt
 from sage.misc.misc_c import prod
+from sage.functions.log import logb
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
@@ -758,14 +759,71 @@ class FiniteDrinfeldModule(DrinfeldModule):
         r"""
         Return an isogeny of given degree if one exists, otherwise return
         None.
-        """
 
+        EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z12> = Fq.extension(6)
+            sage: phi = DrinfeldModule(A, [z12, z12^3, z12^5])
+        """
         Fq = self._Fq
         K = self.base_over_constants_field()
+        Kq = K.over(Fq)
         A = self.function_ring()
+        q = Fq.cardinality()
+        char = Fq.characteristic()
         r, n = self.rank(), K.degree(Fq)
         z = K.gen()
-        frob = Matrix(Fq, n, n)
-        frob[0, 0] = 1
-        for i in range(1, n + 1):
-            col = z**i
+        qorder = logb(q, char)
+        basis = Kq.basis_over(Fq)
+        # This weird casting is done to allow extraction
+        # of coefficients in non-sparse mode from field elements
+        # There really should be a cleaner way to do this
+        pol_var = basis[0].polynomial().parent().gen()
+        pol_ring = PolynomialRing(Fq, str(pol_var))
+        self_coeff = self.coefficients(sparse=False)
+        psi_coeff = psi.coefficients(sparse=False)
+        frob_matrices = []
+
+        # Compute matrices for the Frobenius operator for
+        # K over Fq
+        for order in range(deg + r):
+            frob = Matrix(Fq, n, n)
+            for i, elem in enumerate(basis):
+                col = pol_ring(elem.frobenius(qorder*order).polynomial()) \
+                      .coefficients(sparse=False)
+                col += [0 for _ in range(n - len(col))]
+                for j in range(n):
+                    frob[j,i] = col[j]
+            frob_matrices.append(frob)
+
+        sys, vec = Matrix(Fq, (deg + r)*n, (deg + 1)*n), vector(Fq, (deg + r)*n)
+        for k in range(1, deg + r):
+            for i in range(max(0, k - r), min(k, deg)):
+                oper = Kq(self_coeff[k-i].frobenius(qorder*i)).matrix() \
+                       - Kq(psi_coeff[k-i]).matrix()*frob_matrices[k - i]
+                for j in range(n):
+                    for l in range(n):
+                        sys[(k-1)*n + j, i*n + l] = oper[j, l]
+        if sys.right_nullity() == 0:
+            raise ValueError(f"No isogeny of degree {deg} exists")
+        sol = sys.right_kernel().basis()[0]
+        # Reconstruct the Ore polynomial form the coefficients
+        # map entry elements to kasis of K over Fq, then to the
+        # appropriate degree term
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
