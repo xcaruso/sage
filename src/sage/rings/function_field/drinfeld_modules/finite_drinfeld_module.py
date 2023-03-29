@@ -812,6 +812,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # Reconstruct the Ore polynomial form the coefficients
         # map entry elements to kasis of K over Fq, then to the
         # appropriate degree term
+        iso = 0
+        tau = self.ore_polring().gen()
+        for i in range(deg + 1):
+            coeff = 0
+            for j in range(n):
+                coeff += basis[j]*sol[i*n + j]
+            iso += coeff*(tau**i)
+        return iso
+
+
 
 
 
