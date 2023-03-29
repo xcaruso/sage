@@ -463,8 +463,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius norm
         is `(-1)^r a_{r}`. This is an element of the regular function ring
-        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
-        Frobenius norm has degree `n`.
+        and if `n` is the degree of the base field over `\mathbb{F}_q`,
+        then the Frobenius norm has degree `n`.
 
         EXAMPLES::
 
@@ -503,8 +503,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius trace
         is `-a_{1}`. This is an element of the regular function ring
-        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
-        Frobenius trace has degree at most `\frac{n}{r}`.
+        and if `n` is the degree of the base field over `\mathbb{F}_q`, 
+        then the Frobenius trace has degree at most `\frac{n}{r}`.
 
         EXAMPLES::
 
