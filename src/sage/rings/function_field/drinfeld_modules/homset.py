@@ -27,6 +27,7 @@ from sage.structure.parent import Parent
 from sage.functions.log import logb
 from sage.matrix.constructor import Matrix
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.misc.randstate import set_random_seed
 
 
 class DrinfeldModuleHomset(Homset):
@@ -309,6 +310,43 @@ class DrinfeldModuleHomset(Homset):
         # seems to work, but I don't know what I'm doing.
         return DrinfeldModuleMorphism(self, *args, **kwds)
 
+    def an_element(self, degree):
+        r"""
+        Return an element of the space of morphisms between the domain and
+        codomain. By default, chooses an element of largest degree less than
+        or equal to the parameter `degree`.
+
+        INPUT:
+
+        - ``degree`` -- the maximum degree of the morphism
+
+        OUTPUT: a univariate ore polynomials with coefficients in `K`
+
+        EXAMPLES::
+
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: H = Hom(phi, psi)
+            sage: H.an_element(3)
+            z^2*t^3
+
+        ALGORITHM:
+
+            We scan the basis for the first element of maximal degree
+            and return it.
+        """
+        basis = self.basis(degree)
+        elem = basis[0]
+        max_deg = elem.degree()
+        for basis_elem in basis:
+            if basis_elem.degree() > max_deg:
+                elem = basis_elem
+                max_deg = elem.degree()
+        return elem
+
     def basis(self, degree):
         r"""
         Return a basis for the `\mathbb{F}_q`-space of morphisms from self to
@@ -319,9 +357,7 @@ class DrinfeldModuleHomset(Homset):
 
         INPUT:
 
-        - ``'\psi'`` -- the morphism's codomain, a Drinfeld module
-
-        - ``degree`` (default: ``'1'``) -- the maximum degree of the morphism
+        - ``degree`` -- the maximum degree of the morphism
 
         OUTPUT: a list of univariate ore polynomials with coefficients in `K`
 
@@ -332,9 +368,9 @@ class DrinfeldModuleHomset(Homset):
             sage: K.<z> = Fq.extension(3)
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
-            sage: homset = Hom(phi, psi)
-            sage: basis = homset.basis(3)
-            sage: iso = basis[0]
+            sage: H = Hom(phi, psi)
+            sage: B = H.basis(3)
+            sage: iso = B[0]
             sage: iso*phi.gen() - psi.gen()*iso
             0
 
@@ -400,3 +436,29 @@ class DrinfeldModuleHomset(Homset):
                                for j in range(n)])*(tau**i)
                                for i in range(d + 1)]))
         return basis
+
+    def random_element(self, degree, seed=None):
+        r"""
+        Return a random morphism chosen uniformly from the space of morphisms
+        of degree at most `degree`.
+
+        INPUT:
+
+        - ``degree`` -- the maximum degree of the morphism
+
+        OUTPUT: a univariate ore polynomials with coefficients in `K`
+
+        EXAMPLES::
+
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: H = Hom(phi, psi)
+            sage: H.random_element(3, seed=25)
+            z^2*t^3 + z^2
+        """
+        basis = self.basis(degree)
+        set_random_seed(seed)
+        return sum([self.domain()._Fq.random_element()*elem for elem in basis])
