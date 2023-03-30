@@ -380,7 +380,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         coeffs_A = list(map(lambda coeff: coeff_A(coeff), charpoly_coeffs_K))
         return PolynomialRing(A, name=var)(coeffs_A)
 
-    def _frobenius_charpoly_gekeler(self, var='X'):
+    def _frobenius_charpoly_gekeler(self, var):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism using Gekeler's algorithm.
@@ -417,6 +417,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi = DrinfeldModule(A, [z, 4, 1, z])
             sage: phi._frobenius_charpoly_gekeler('X')
             X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + ... + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
+
+        ::
 
             sage: Fq = GF(125)
             sage: A.<T> = Fq[]
@@ -503,17 +505,16 @@ class FiniteDrinfeldModule(DrinfeldModule):
             The Frobenius norm is computed using the formula, by
             Gekeler, given in [MS2019]_, Section 4, Proposition 3.
         """
-        if self._frobenius_charpoly is not None:
-            self._frobenius_norm = ((-1)**(self.rank() % 2)) \
-                                   * self.frobenius_charpoly() \
-                                   .coefficients(sparse=False)[0]
+        if self._frobenius_norm is not None:
+            return self._frobenius_norm
         K = self.base_over_constants_field()
         Fq = self._Fq
         Kq = K.over(Fq)
         n = K.degree(Fq)
         char = self.characteristic()
-        return ((-1)**n)*(char**(n/char.degree())) \
-               / Kq(self.coefficients()[-1]).norm()
+        self._frobenius_norm = ((-1)**n)*(char**(n/char.degree())) \
+                               / Kq(self.coefficients()[-1]).norm()
+        return self._frobenius_norm
 
     def frobenius_trace(self):
         r"""
