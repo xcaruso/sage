@@ -30,6 +30,7 @@ from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldM
 from sage.functions.other import ceil, sqrt
 from sage.misc.misc_c import prod
 from sage.functions.log import logb
+from sage.misc.randstate import set_random_seed
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
@@ -755,26 +756,59 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         return self.characteristic().divides(self.frobenius_trace())
 
-    def isogeny(self, psi, deg):
+    def isogeny(self, psi, degree = 1, check_isogenous = True, seed = None):
         r"""
-        Return an isogeny of given degree if one exists, otherwise return
-        None.
+        Return an isogeny of given degree if one exists, otherwise raise
+        an error. An isogeny of drinfeld modules is a non-zero morphism
+        `\iota: \phi \to psi`. Recall that morphisms are elements of
+        `\sigma \in K\{\tau\}` such that $\sigma \phi_T = \psi_T \sigma$.
+        The degree of an isogeny is the `\tau`-degree of `\iota`.
+
+        INPUT:
+
+        - ``'\psi'`` -- the isogeny's codomain, a Drinfeld module
+
+        - ``degree`` (default: ``'1'``) -- the degree of the isogeny
+
+        - ``check_isogenous`` (default: ``True``) -- first verify the Drinfeld
+            modules are isogenous
+
+        - ``seed`` (default: ``None``) -- random seed for choosing isogeny
+
+        OUTPUT: a univariate ore polynomial with coefficients in `K`
 
         EXAMPLES::
 
-            sage: Fq = GF(25)
+            sage: Fq = GF(2)
             sage: A.<T> = Fq[]
-            sage: K.<z12> = Fq.extension(6)
-            sage: phi = DrinfeldModule(A, [z12, z12^3, z12^5])
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: iso = phi.isogeny(psi, 3)
+            sage: iso
+            (z^2 + 1)*t^2 + t + z + 1
+            sage: iso*phi.gen() - psi.gen()*iso
+            0
+
+        ALGORITHM:
+
+            We solve for the coefficients of an isogeny `\iota` of degree
+            d based on the constraint that `\iota \phi_T = \psi_T \iota`.
+            See [Wes2022]_ for details on this algorithm.
         """
+        if check_isogenous and not self.is_isogenous(psi):
+            raise ValueError("Drinfeld modules are not isogenous")
         Fq = self._Fq
         K = self.base_over_constants_field()
         Kq = K.over(Fq)
         A = self.function_ring()
         q = Fq.cardinality()
         char = Fq.characteristic()
-        r, n = self.rank(), K.degree(Fq)
+        r = self.rank()
+        n = K.degree(Fq)
         z = K.gen()
+        # shorten name for readability
+        d = degree
         qorder = logb(q, char)
         basis = Kq.basis_over(Fq)
         # This weird casting is done to allow extraction
@@ -788,7 +822,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         # Compute matrices for the Frobenius operator for
         # K over Fq
-        for order in range(deg + r):
+        for order in range(d + r):
             frob = Matrix(Fq, n, n)
             for i, elem in enumerate(basis):
                 col = pol_ring(elem.frobenius(qorder*order).polynomial()) \
@@ -798,42 +832,42 @@ class FiniteDrinfeldModule(DrinfeldModule):
                     frob[j,i] = col[j]
             frob_matrices.append(frob)
 
-        sys, vec = Matrix(Fq, (deg + r)*n, (deg + 1)*n), vector(Fq, (deg + r)*n)
-        for k in range(1, deg + r):
-            for i in range(max(0, k - r), min(k, deg)):
-                oper = Kq(self_coeff[k-i].frobenius(qorder*i)).matrix() \
-                       - Kq(psi_coeff[k-i]).matrix()*frob_matrices[k - i]
+        sys = Matrix(Fq, (d + r + 1)*n, (d + 1)*n)
+        for k in range(0, d + r + 1):
+            for i in range(max(0, k - r), min(k, d) + 1):
+                # We represent multiplication and Frobenius
+                # as operators acting on K as a vector space
+                # over Fq
+                # Require matrices act on the right, so we
+                # take a transpose of operators here
+                oper = Kq(self_coeff[k-i] \
+                        .frobenius(qorder*i)).matrix().transpose() \
+                       - Kq(psi_coeff[k-i]).matrix().transpose() \
+                       * frob_matrices[k - i]
                 for j in range(n):
                     for l in range(n):
-                        sys[(k-1)*n + j, i*n + l] = oper[j, l]
+                        sys[k*n + j, i*n + l] = oper[j, l]
+
         if sys.right_nullity() == 0:
-            raise ValueError(f"No isogeny of degree {deg} exists")
-        sol = sys.right_kernel().basis()[0]
+            raise ValueError(f"No isogeny of degree {d} exists")
+
+        # Select an isogeny at random; possibly with a given seed
+        set_random_seed(seed)
+        is_zero = True
+        # Make sure the selection is non-zero
+        while is_zero:
+            sol = sys.right_kernel().random_element()
+            for entry in sol:
+                if entry != 0:
+                    is_zero = False
         # Reconstruct the Ore polynomial form the coefficients
         # map entry elements to kasis of K over Fq, then to the
         # appropriate degree term
         iso = 0
         tau = self.ore_polring().gen()
-        for i in range(deg + 1):
+        for i in range(d + 1):
             coeff = 0
             for j in range(n):
                 coeff += basis[j]*sol[i*n + j]
             iso += coeff*(tau**i)
         return iso
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -6219,6 +6219,10 @@ REFERENCES:
              *Coboundary categories and local rules*,
              The Electronic Journal of Combinatorics, *25* (2018)
 
+.. [Wes2022] \B. Wesolowski. 2022. *Computing isogenies between finite Drinfeld modules*.
+             Cryptology ePrint Archive, Paper 2022/438. https://eprint.iacr.org/2022/438
+             https://eprint.iacr.org/2022/438.
+
 .. [WFYTP2008] \D. Watanable, S. Furuya, H. Yoshida, K. Takaragi, and B. Preneel,
                *A new keystream generator MUGI*; in
                FSE, (2002), pp. 179-194.
