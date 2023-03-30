@@ -774,7 +774,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         return self.characteristic().divides(self.frobenius_trace())
 
-    def isogeny(self, psi, degree = 1, check_isogenous = True, seed = None):
+    def isogeny(self, psi, degree=1, check_isogenous=True, seed=None):
         r"""
         Return an isogeny of given degree if one exists, otherwise raise
         an error. An isogeny of drinfeld modules is a non-zero morphism
@@ -819,12 +819,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Fq = self._Fq
         K = self.base_over_constants_field()
         Kq = K.over(Fq)
-        A = self.function_ring()
         q = Fq.cardinality()
         char = Fq.characteristic()
         r = self.rank()
         n = K.degree(Fq)
-        z = K.gen()
         # shorten name for readability
         d = degree
         qorder = logb(q, char)
@@ -847,7 +845,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                       .coefficients(sparse=False)
                 col += [0 for _ in range(n - len(col))]
                 for j in range(n):
-                    frob[j,i] = col[j]
+                    frob[j, i] = col[j]
             frob_matrices.append(frob)
 
         sys = Matrix(Fq, (d + r + 1)*n, (d + 1)*n)
@@ -858,7 +856,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 # over Fq
                 # Require matrices act on the right, so we
                 # take a transpose of operators here
-                oper = Kq(self_coeff[k-i] \
+                oper = Kq(self_coeff[k-i]
                         .frobenius(qorder*i)).matrix().transpose() \
                        - Kq(psi_coeff[k-i]).matrix().transpose() \
                        * frob_matrices[k - i]
@@ -882,5 +880,5 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # map entry elements to kasis of K over Fq, then to the
         # appropriate degree term
         tau = self.ore_polring().gen()
-        return sum([sum([basis[j]*sol[i*n + j] for j in range(n)])*(tau**i) \
+        return sum([sum([basis[j]*sol[i*n + j] for j in range(n)])*(tau**i)
                 for i in range(d + 1)])
