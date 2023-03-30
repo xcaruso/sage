@@ -378,7 +378,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         coeffs_A = list(map(lambda coeff: coeff_A(coeff), charpoly_coeffs_K))
         return PolynomialRing(A, name=var)(coeffs_A)
 
-    def _frobenius_charpoly_gekeler(self, var='X'):
+    def _frobenius_charpoly_gekeler(self, var):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism using Gekeler's algorithm.
