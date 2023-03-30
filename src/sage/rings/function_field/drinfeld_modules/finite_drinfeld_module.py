@@ -155,6 +155,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # added one to ensure that FiniteDrinfeldModule would always
         # have _frobenius_norm and _frobenius_trace attributes.
         super().__init__(gen, category)
+        self._frobenius_norm = None
         self._frobenius_charpoly = None
 
     def frobenius_endomorphism(self):
@@ -201,7 +202,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         characteristic polynomial of the Frobenius endomorphism as a
         bivariate polynomial.
 
-        Let `\chi = X^r + \sum_{i=1}^{r} A_{i}(T)X^{r-i}` be the
+        Let `\chi = X^r + \sum_{i=0}^{r-1} A_{i}(T)X^{i}` be the
         characteristic polynomial of the Frobenius endomorphism, and
         let `t^n` be the Ore polynomial that defines the Frobenius
         endomorphism of `\phi`; by definition, `n` is the degree of `K`
@@ -210,13 +211,13 @@ class FiniteDrinfeldModule(DrinfeldModule):
         .. MATH::
 
             \chi(t^n)(\phi(T))
-            = t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(r-i)}
+            = t^{nr} + \sum_{i=1}^{r} \phi_{A_{i}}t^{n(i)}
             = 0,
 
-        with `\deg(A_i) \leq \frac{ir}{n}`.
+        with `\deg(A_i) \leq \frac{n(r-i)}{r}`.
 
-        Note that the *Frobenius trace* is defined as `A_1(T)` and the
-        *Frobenius norm* is defined as `A_r(T)`.
+        Note that the *Frobenius trace* is defined as `A_{r-1}(T)` and the
+        *Frobenius norm* is defined as `A_0(T)`.
 
         INPUT:
 
@@ -233,6 +234,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: phi = DrinfeldModule(A, [p_root, z12^3, z12^5])
             sage: phi.frobenius_charpoly()
             X^2 + ((4*z2 + 4)*T^3 + (z2 + 3)*T^2 + 3*T + 2*z2 + 3)*X + 3*z2*T^6 + (4*z2 + 3)*T^5 + (4*z2 + 4)*T^4 + 2*T^3 + (3*z2 + 3)*T^2 + (z2 + 2)*T + 4*z2
+
+        ::
 
             sage: Fq = GF(343)
             sage: A.<T> = Fq[]
@@ -261,8 +264,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Frobenius acting on the crystalline cohomology of the Drinfeld
         module. For further details, see [Ang1997]_. Currently, the only
         alternative is to use the *gekeler* approach based on solving
-        the linear system given by `t^{nr} + \sum_{i=1}^{r}
-        \phi_{A_{i}}t^{n(r-i)} = 0`. For more details, see [Gek2008]_.
+        the linear system given by `t^{nr} + \sum_{i=0}^{r-1}
+        \phi_{A_{i}}t^{ni} = 0`. For more details, see [Gek2008]_.
         """
         methods = [method for method in dir(self)
                    if method.startswith('_frobenius_charpoly_')]
@@ -274,7 +277,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             return self._frobenius_charpoly
         raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
 
-    def _frobenius_charpoly_crystalline(self, var='X'):
+    def _frobenius_charpoly_crystalline(self, var):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism using Crystalline cohomology.
@@ -283,11 +286,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
         any rank.
 
         This method is private and should not be directly called.
-        Instead, use :meth:`frobenius_charpoly`.
+        Instead, use :meth:`frobenius_charpoly` with the option
+        `algorithm='crystalline'`.
 
         INPUT:
 
-        - ``var`` (default: ``'X'``) -- the name of the second variable
+        - ``var`` -- the name of the second variable
+
+        OUTPUT: a univariate polynomial with coefficients in the
+                function ring
 
         EXAMPLES::
 
@@ -296,7 +303,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z12> = Fq.extension(6)
             sage: p_root = 2*z12^11 + 2*z12^10 + z12^9 + 3*z12^8 + z12^7 + 2*z12^5 + 2*z12^4 + 3*z12^3 + z12^2 + 2*z12
             sage: phi = DrinfeldModule(A, [p_root, z12^3, z12^5])
-            sage: phi._frobenius_charpoly_crystalline()
+            sage: phi._frobenius_charpoly_crystalline('X')
             X^2 + ((4*z2 + 4)*T^3 + (z2 + 3)*T^2 + 3*T + 2*z2 + 3)*X + 3*z2*T^6 + (4*z2 + 3)*T^5 + (4*z2 + 4)*T^4 + 2*T^3 + (3*z2 + 3)*T^2 + (z2 + 2)*T + 4*z2
 
         ::
@@ -305,7 +312,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
-            sage: phi._frobenius_charpoly_crystalline()
+            sage: phi._frobenius_charpoly_crystalline('X')
             X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + ... + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
 
         ::
@@ -314,7 +321,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
             sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
-            sage: phi._frobenius_charpoly_crystalline()
+            sage: phi._frobenius_charpoly_crystalline('X')
             X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + ... + (2*z3^2 + 2*z3 + 2)*T + z3^2
 
         ALGORITHM:
@@ -332,22 +339,21 @@ class FiniteDrinfeldModule(DrinfeldModule):
         q, r, n = Fq.cardinality(), self.rank(), K.degree(Fq)
         nstar = ceil(sqrt(n))
         nquo, nrem = divmod(n, nstar)
-        drin_coeff = self.coefficients(sparse=False)
+        drin_coeffs = self.coefficients(sparse=False)
         poly_K = PolynomialRing(K, name=str(A.gen()))
         matrix_poly_K = MatrixSpace(poly_K, r, r)
-        mu_coeffs = ((poly_K.gen() - drin_coeff[0])**(n+1)).coefficients(
-                                                            sparse=False)
+        mu_coeffs = ((poly_K.gen() - drin_coeffs[0])**(n+1)).coefficients(
+                                                             sparse=False)
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
             M = matrix_poly_K(companion_matrix(
-                              [(drin_coeff[i]/drin_coeff[r])**(q**order)
+                              [(drin_coeffs[i]/drin_coeffs[r])**(q**order)
                                for i in range(r)] + [1], format='top'))
-            M[0, r-1] += poly_K.gen() / drin_coeff[r]**(q**order)
+            M[0, r-1] += poly_K.gen() / drin_coeffs[r]**(q**order)
             return M
 
-        companion_initial = prod([companion(i)
-                                 for i in range(nrem, 0, -1)])
+        companion_initial = prod([companion(i) for i in range(nrem, 0, -1)])
         companion_step = prod([companion(i)
                               for i in range(nstar + nrem, nrem, -1)])
         reduced_companions = []
@@ -364,12 +370,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
         charpoly_coeffs_K = (prod(reduced_companions) * companion_step *
                              companion_initial).charpoly(var).coefficients(
                              sparse=False)
-        # The above line obtains a char poly with coefficients in L[T]
-        # This maps them into A
-        return PolynomialRing(A, name=var)(
-                list(map(lambda coeff:
-                     A(list(map(lambda x: K(x).vector()[0], coeff))),
-                       charpoly_coeffs_K)))
+
+        # The above line obtains a char poly with coefficients in K[T]
+        # This maps them into A = Fq[T]
+        def coeff_A(coeff):
+            return A(list(map(lambda x: K(x).vector()[0], coeff)))
+
+        coeffs_A = list(map(lambda coeff: coeff_A(coeff), charpoly_coeffs_K))
+        return PolynomialRing(A, name=var)(coeffs_A)
 
     def _frobenius_charpoly_gekeler(self, var='X'):
         r"""
@@ -381,20 +389,21 @@ class FiniteDrinfeldModule(DrinfeldModule):
         of the base field.
 
         This method is private and should not be directly called.
-        Instead, use :meth:`frobenius_charpoly`.
+        Instead, use :meth:`frobenius_charpoly` with the option
+        `algorithm='gekeler'`.
 
         .. WARNING:
 
-            This algorithm only works in the generic case
-            when the corresponding linear system is invertible.
-            Notable cases where this fails include Drinfeld
-            modules whose minimal polynomial is not equal to
-            the characteristic polynomial, and rank 2 Drinfeld
-            modules where the degree 1 coefficient of `\phi_T` is 0.
+            This algorithm only works in the generic case when the
+            corresponding linear system is invertible. Notable cases
+            where this fails include Drinfeld modules whose minimal
+            polynomial is not equal to the characteristic polynomial,
+            and rank 2 Drinfeld modules where the degree 1 coefficient
+            of `\phi_T` is 0. In that case, an exception is raised.
 
         INPUT:
 
-        - ``var`` (default: ``'X'``) -- the name of the second variable
+        - ``var`` -- the name of the second variable
 
         OUTPUT: a univariate polynomial with coefficients in the
                 function ring
@@ -405,14 +414,14 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(6)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z])
-            sage: phi._frobenius_charpoly_gekeler()
+            sage: phi._frobenius_charpoly_gekeler('X')
             X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + ... + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
 
             sage: Fq = GF(125)
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(2)
             sage: phi = DrinfeldModule(A, [z, 0, z])
-            sage: phi._frobenius_charpoly_gekeler()
+            sage: phi._frobenius_charpoly_gekeler('X')
             Traceback (most recent call last):
             NotImplementedError: 'Gekeler' algorithm failed
 
@@ -461,11 +470,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
         r"""
         Return the Frobenius norm of the Drinfeld module.
 
-        Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
+        Let `C(X) = \sum_{i=0}^r a_iX^{i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius norm
-        is `(-1)^r a_{r}`. This is an element of the regular function ring
-        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
-        Frobenius norm has degree `n`.
+        is `(-1)^r a_{0}`. This is an element of the regular function ring
+        and if `n` is the degree of the base field over `\mathbb{F}_q`,
+        then the Frobenius norm has degree `n`.
 
         EXAMPLES::
 
@@ -493,19 +502,28 @@ class FiniteDrinfeldModule(DrinfeldModule):
             The Frobenius norm is computed using the formula, by
             Gekeler, given in [MS2019]_, Section 4, Proposition 3.
         """
-        return ((-1)**(self.rank() % 2)) * \
-               self.frobenius_charpoly().coefficients(sparse=False)[0]
+        if self._frobenius_charpoly != None:
+            self._frobenius_norm = ((-1)**(self.rank() % 2)) \
+                                   * self.frobenius_charpoly() \
+                                   .coefficients(sparse=False)[0]
+        K = self.base_over_constants_field()
+        Fq = self._Fq
+        Kq = K.over(Fq)
+        n = K.degree(Fq)
+        char = self.characteristic()
+        return ((-1)**n)*(char**(n/char.degree())) \
+                / Kq(self.coefficients()[-1]).norm()
 
     def frobenius_trace(self):
         r"""
         Return Frobenius trace of the Drinfeld module, if the rank is
         two; raise a NotImplementedError otherwise.
 
-        Let `C(X) = \sum_{i=0}^r a_iX^{r-i}` denote the characteristic
+        Let `C(X) = \sum_{i=0}^r a_iX^{i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius trace
-        is `-a_{1}`. This is an element of the regular function ring
-        and if `n` is the degree of the base field over `\mathbb{F}_q` Then the
-        Frobenius trace has degree at most `\frac{n}{r}`.
+        is `-a_{r-1}`. This is an element of the regular function ring
+        and if `n` is the degree of the base field over `\mathbb{F}_q`, 
+        then the Frobenius trace has degree at most `\frac{n}{r}`.
 
         EXAMPLES::
 
@@ -684,8 +702,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
             raise TypeError("Input must be a Drinfeld module")
         if self.category() != psi.category():
             raise TypeError("Drinfeld modules are not in the same category")
-        return self.rank() == psi.rank() and \
-               self.frobenius_charpoly() == psi.frobenius_charpoly()
+        return self.rank() == psi.rank() \
+               and self.frobenius_charpoly() == psi.frobenius_charpoly()
 
     def is_ordinary(self):
         r"""
