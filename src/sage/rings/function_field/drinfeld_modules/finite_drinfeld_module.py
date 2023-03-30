@@ -802,9 +802,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z> = Fq.extension(3)
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
-            sage: iso = phi.isogeny(psi, 3)
+            sage: iso = phi.isogeny(psi, 3, seed=12)
             sage: iso
-            (z^2 + 1)*t^2 + t + z + 1
+            z^2*t^3 + (z^2 + 1)*t^2 + t + z^2 + z + 1
             sage: iso*phi.gen() - psi.gen()*iso
             0
 
@@ -881,11 +881,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # Reconstruct the Ore polynomial form the coefficients
         # map entry elements to kasis of K over Fq, then to the
         # appropriate degree term
-        iso = 0
         tau = self.ore_polring().gen()
-        for i in range(d + 1):
-            coeff = 0
-            for j in range(n):
-                coeff += basis[j]*sol[i*n + j]
-            iso += coeff*(tau**i)
-        return iso
+        return sum([sum([basis[j]*sol[i*n + j] for j in range(n)])*(tau**i) \
+                for i in range(d + 1)])
