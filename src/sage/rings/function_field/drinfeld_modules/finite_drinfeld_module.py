@@ -506,12 +506,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
         if self._frobenius_norm is not None:
             return self._frobenius_norm
         K = self.base_over_constants_field()
-        Fq = self._Fq
-        Kq = K.over(Fq)
-        n = K.degree(Fq)
+        n = K.degree(self._Fq)
         char = self.characteristic()
         self._frobenius_norm = ((-1)**n)*(char**(n/char.degree())) \
-                               / Kq(self.coefficients()[-1]).norm()
+                               / K(self.coefficients()[-1]).norm()
         return self._frobenius_norm
 
     def frobenius_trace(self):
