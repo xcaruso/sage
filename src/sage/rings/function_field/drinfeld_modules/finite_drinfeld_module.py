@@ -501,7 +501,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             The Frobenius norm is computed using the formula, by
             Gekeler, given in [MS2019]_, Section 4, Proposition 3.
         """
-        if self._frobenius_charpoly != None:
+        if self._frobenius_charpoly is not None:
             self._frobenius_norm = ((-1)**(self.rank() % 2)) \
                                    * self.frobenius_charpoly() \
                                    .coefficients(sparse=False)[0]
@@ -511,7 +511,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         n = K.degree(Fq)
         char = self.characteristic()
         return ((-1)**n)*(char**(n/char.degree())) \
-                / Kq(self.coefficients()[-1]).norm()
+               / Kq(self.coefficients()[-1]).norm()
 
     def frobenius_trace(self):
         r"""
@@ -521,7 +521,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Let `C(X) = \sum_{i=0}^r a_iX^{i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius trace
         is `-a_{r-1}`. This is an element of the regular function ring
-        and if `n` is the degree of the base field over `\mathbb{F}_q`, 
+        and if `n` is the degree of the base field over `\mathbb{F}_q`,
         then the Frobenius trace has degree at most `\frac{n}{r}`.
 
         EXAMPLES::
