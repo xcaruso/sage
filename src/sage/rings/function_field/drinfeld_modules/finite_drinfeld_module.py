@@ -29,7 +29,6 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
 from sage.functions.other import ceil, sqrt
 from sage.misc.misc_c import prod
-from sage.functions.log import logb
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
@@ -773,94 +772,3 @@ class FiniteDrinfeldModule(DrinfeldModule):
             inseparable; see [Gek1991]_, Proposition 4.1.
         """
         return self.characteristic().divides(self.frobenius_trace())
-
-    def basis_morphisms(self, psi, degree=1):
-        r"""
-        Return a basis for the `\mathbb{F}_q`-space of morphisms from self to
-        a Drinfeld module `\psi` of degree at most `degree`. A morphism
-        `\iota: \phi \to psi` is an element `\iota \in K\{\tau\}` such that
-        `iota \phi_T = \psi_T \iota`. The degree of a morphism is the
-        `\tau`-degree of `\iota`.
-
-        INPUT:
-
-        - ``'\psi'`` -- the morphism's codomain, a Drinfeld module
-
-        - ``degree`` (default: ``'1'``) -- the maximum degree of the morphism
-
-        OUTPUT: a list of univariate ore polynomials with coefficients in `K`
-
-        EXAMPLES::
-
-            sage: Fq = GF(2)
-            sage: A.<T> = Fq[]
-            sage: K.<z> = Fq.extension(3)
-            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
-            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
-            sage: morphisms = phi.basis_morphisms(psi, 3)
-            sage: iso = morphisms[2]
-            sage: iso*phi.gen() - psi.gen()*iso
-            0
-
-        ALGORITHM:
-
-            We return the basis of the kernel of a matrix derived from the
-            constraint that `\iota \phi_T = \psi_T \iota`. See [Wes2022]_ for
-            details on this algorithm.
-        """
-        Fq = self._Fq
-        K = self.base_over_constants_field()
-        Kq = K.over(Fq)
-        q = Fq.cardinality()
-        char = Fq.characteristic()
-        r = self.rank()
-        n = K.degree(Fq)
-        # shorten name for readability
-        d = degree
-        qorder = logb(q, char)
-        basis = Kq.basis_over(Fq)
-        # This weird casting is done to allow extraction
-        # of coefficients in non-sparse mode from field elements
-        # There really should be a cleaner way to do this
-        pol_var = basis[0].polynomial().parent().gen()
-        pol_ring = PolynomialRing(Fq, str(pol_var))
-        self_coeff = self.coefficients(sparse=False)
-        psi_coeff = psi.coefficients(sparse=False)
-        frob_matrices = []
-
-        # Compute matrices for the Frobenius operator for
-        # K over Fq
-        for order in range(d + r):
-            frob = Matrix(Fq, n, n)
-            for i, elem in enumerate(basis):
-                col = pol_ring(elem.frobenius(qorder*order).polynomial()) \
-                      .coefficients(sparse=False)
-                col += [0 for _ in range(n - len(col))]
-                for j in range(n):
-                    frob[j, i] = col[j]
-            frob_matrices.append(frob)
-
-        sys = Matrix(Fq, (d + r + 1)*n, (d + 1)*n)
-        for k in range(0, d + r + 1):
-            for i in range(max(0, k - r), min(k, d) + 1):
-                # We represent multiplication and Frobenius
-                # as operators acting on K as a vector space
-                # over Fq
-                # Require matrices act on the right, so we
-                # take a transpose of operators here
-                oper = Kq(self_coeff[k-i]
-                        .frobenius(qorder*i)).matrix().transpose() \
-                       - Kq(psi_coeff[k-i]).matrix().transpose() \
-                       * frob_matrices[k - i]
-                for j in range(n):
-                    for l in range(n):
-                        sys[k*n + j, i*n + l] = oper[j, l]
-        sol = sys.right_kernel().basis()
-        # Reconstruct the Ore polynomial from the coefficients
-        ore_basis = []
-        tau = self.ore_polring().gen()
-        for basis_elem in sol:
-            ore_basis.append(sum([sum([basis[j]*basis_elem[i*n + j]
-                            for j in range(n)])*(tau**i)
-                            for i in range(d + 1)]))
-        return ore_basis
