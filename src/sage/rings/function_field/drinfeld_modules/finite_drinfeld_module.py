@@ -877,9 +877,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             for entry in sol:
                 if entry != 0:
                     is_zero = False
-        # Reconstruct the Ore polynomial form the coefficients
-        # map entry elements to kasis of K over Fq, then to the
-        # appropriate degree term
+        # Reconstruct the Ore polynomial from the coefficients
         tau = self.ore_polring().gen()
         return sum([sum([basis[j]*sol[i*n + j] for j in range(n)])*(tau**i)
                 for i in range(d + 1)])
