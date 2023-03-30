@@ -30,7 +30,6 @@ from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldM
 from sage.functions.other import ceil, sqrt
 from sage.misc.misc_c import prod
 from sage.functions.log import logb
-from sage.misc.randstate import set_random_seed
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
@@ -775,26 +774,21 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         return self.characteristic().divides(self.frobenius_trace())
 
-    def isogeny(self, psi, degree=1, check_isogenous=True, seed=None):
+    def basis_morphisms(self, psi, degree=1):
         r"""
-        Return an isogeny of given degree if one exists, otherwise raise
-        an error. An isogeny of drinfeld modules is a non-zero morphism
-        `\iota: \phi \to psi`. Recall that morphisms are elements of
-        `\sigma \in K\{\tau\}` such that $\sigma \phi_T = \psi_T \sigma$.
-        The degree of an isogeny is the `\tau`-degree of `\iota`.
+        Return a basis for the `\mathbb{F}_q`-space of morphisms from self to
+        a Drinfeld module `\psi` of degree at most `degree`. A morphism
+        `\iota: \phi \to psi` is an element `\iota \in K\{\tau\}` such that
+        `iota \phi_T = \psi_T \iota`. The degree of a morphism is the
+        `\tau`-degree of `\iota`.
 
         INPUT:
 
-        - ``'\psi'`` -- the isogeny's codomain, a Drinfeld module
+        - ``'\psi'`` -- the morphism's codomain, a Drinfeld module
 
-        - ``degree`` (default: ``'1'``) -- the degree of the isogeny
+        - ``degree`` (default: ``'1'``) -- the maximum degree of the morphism
 
-        - ``check_isogenous`` (default: ``True``) -- first verify the Drinfeld
-            modules are isogenous
-
-        - ``seed`` (default: ``None``) -- random seed for choosing isogeny
-
-        OUTPUT: a univariate ore polynomial with coefficients in `K`
+        OUTPUT: a list of univariate ore polynomials with coefficients in `K`
 
         EXAMPLES::
 
@@ -803,20 +797,17 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z> = Fq.extension(3)
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
-            sage: iso = phi.isogeny(psi, 3, seed=12)
-            sage: iso
-            z^2*t^3 + (z^2 + 1)*t^2 + t + z^2 + z + 1
+            sage: morphisms = phi.basis_morphisms(psi, 3)
+            sage: iso = morphisms[2]
             sage: iso*phi.gen() - psi.gen()*iso
             0
 
         ALGORITHM:
 
-            We solve for the coefficients of an isogeny `\iota` of degree
-            d based on the constraint that `\iota \phi_T = \psi_T \iota`.
-            See [Wes2022]_ for details on this algorithm.
+            We return the basis of the kernel of a matrix derived from the
+            constraint that `\iota \phi_T = \psi_T \iota`. See [Wes2022]_ for
+            details on this algorithm.
         """
-        if check_isogenous and not self.is_isogenous(psi):
-            raise ValueError("Drinfeld modules are not isogenous")
         Fq = self._Fq
         K = self.base_over_constants_field()
         Kq = K.over(Fq)
@@ -864,20 +855,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 for j in range(n):
                     for l in range(n):
                         sys[k*n + j, i*n + l] = oper[j, l]
-
-        if sys.right_nullity() == 0:
-            raise ValueError(f"No isogeny of degree {d} exists")
-
-        # Select an isogeny at random; possibly with a given seed
-        set_random_seed(seed)
-        is_zero = True
-        # Make sure the selection is non-zero
-        while is_zero:
-            sol = sys.right_kernel().random_element()
-            for entry in sol:
-                if entry != 0:
-                    is_zero = False
+        sol = sys.right_kernel().basis()
         # Reconstruct the Ore polynomial from the coefficients
+        ore_basis = []
         tau = self.ore_polring().gen()
-        return sum([sum([basis[j]*sol[i*n + j] for j in range(n)])*(tau**i)
-                for i in range(d + 1)])
+        for basis_elem in sol:
+            ore_basis.append(sum([sum([basis[j]*basis_elem[i*n + j]
+                            for j in range(n)])*(tau**i)
+                            for i in range(d + 1)]))
+        return ore_basis
