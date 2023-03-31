@@ -310,7 +310,7 @@ class DrinfeldModuleHomset(Homset):
         # seems to work, but I don't know what I'm doing.
         return DrinfeldModuleMorphism(self, *args, **kwds)
 
-    def an_element(self, degree):
+    def element(self, degree):
         r"""
         Return an element of the space of morphisms between the domain and
         codomain. By default, chooses an element of largest degree less than
@@ -330,7 +330,7 @@ class DrinfeldModuleHomset(Homset):
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
             sage: H = Hom(phi, psi)
-            sage: H.an_element(3)
+            sage: H.element(3)
             z^2*t^3
 
         ALGORITHM:
