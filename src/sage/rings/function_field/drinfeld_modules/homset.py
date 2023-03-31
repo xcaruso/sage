@@ -330,8 +330,10 @@ class DrinfeldModuleHomset(Homset):
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
             sage: H = Hom(phi, psi)
-            sage: H.element(3)
-            z^2*t^3
+            sage: M = H.element(3)
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
+            0
 
         ALGORITHM:
 
@@ -340,11 +342,11 @@ class DrinfeldModuleHomset(Homset):
         """
         basis = self.basis(degree)
         elem = basis[0]
-        max_deg = elem.degree()
+        max_deg = elem.ore_polynomial().degree()
         for basis_elem in basis:
-            if basis_elem.degree() > max_deg:
+            if basis_elem.ore_polynomial().degree() > max_deg:
                 elem = basis_elem
-                max_deg = elem.degree()
+                max_deg = elem.ore_polynomial().degree()
         return elem
 
     def basis(self, degree):
@@ -370,8 +372,9 @@ class DrinfeldModuleHomset(Homset):
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
             sage: H = Hom(phi, psi)
             sage: B = H.basis(3)
-            sage: iso = B[0]
-            sage: iso*phi.gen() - psi.gen()*iso
+            sage: M = B[0]
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
             0
 
         ALGORITHM:
@@ -432,9 +435,9 @@ class DrinfeldModuleHomset(Homset):
         basis = []
         tau = domain.ore_polring().gen()
         for basis_elem in sol:
-            basis.append(sum([sum([K_basis[j]*basis_elem[i*n + j]
+            basis.append(self(sum([sum([K_basis[j]*basis_elem[i*n + j]
                                for j in range(n)])*(tau**i)
-                               for i in range(d + 1)]))
+                               for i in range(d + 1)])))
         return basis
 
     def random_element(self, degree, seed=None):
@@ -456,9 +459,11 @@ class DrinfeldModuleHomset(Homset):
             sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
             sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
             sage: H = Hom(phi, psi)
-            sage: H.random_element(3, seed=25)
-            z^2*t^3 + z^2
+            sage: M = H.random_element(3, seed=25)
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
+            0
         """
-        basis = self.basis(degree)
         set_random_seed(seed)
-        return sum([self.domain()._Fq.random_element()*elem for elem in basis])
+        return self(sum([self.domain()._Fq.random_element()
+                    * elem.ore_polynomial() for elem in self.basis(degree)]))
