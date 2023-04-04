@@ -149,11 +149,17 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: ore_polring = phi.ore_polring()
             sage: phi._gen == ore_polring(gen)
             True
+
+        ::
+
+            sage: phi._base_degree_over_constants
+            6
         """
         # NOTE: There used to be no __init__ here (which was fine). I
         # added one to ensure that FiniteDrinfeldModule would always
         # have _frobenius_norm and _frobenius_trace attributes.
         super().__init__(gen, category)
+        self._base_degree_over_constants = self.base_over_constants_field().degree(self._Fq)
         self._frobenius_norm = None
         self._frobenius_charpoly = None
 
