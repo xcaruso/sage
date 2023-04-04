@@ -28,6 +28,7 @@ from sage.modules.free_module_element import vector
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
 from sage.functions.other import ceil, sqrt
+from sage.functions.log import logb
 from sage.misc.misc_c import prod
 
 
@@ -341,7 +342,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         Fq = self._Fq
         K = self.base_over_constants_field()
         A = self.function_ring()
-        q, r, n = Fq.cardinality(), self.rank(), K.degree(Fq)
+        char, q = Fq.characteristic(), Fq.cardinality()
+        qdeg = logb(q, char)
+        r, n = self.rank(), self._base_degree_over_constants
         nstar = ceil(sqrt(n))
         nquo, nrem = divmod(n, nstar)
         drin_coeffs = self.coefficients(sparse=False)
@@ -352,10 +355,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
-            M = matrix_poly_K(companion_matrix(
-                              [(drin_coeffs[i]/drin_coeffs[r])**(q**order)
+            M = matrix_poly_K(companion_matrix([(drin_coeffs[i]/drin_coeffs[r])
+                               .frobenius(qdeg*order)
                                for i in range(r)] + [1], format='top'))
-            M[0, r-1] += poly_K.gen() / drin_coeffs[r]**(q**order)
+            M[0, r-1] += poly_K.gen() / drin_coeffs[r].frobenius(qdeg*order)
             return M
 
         companion_initial = prod([companion(i) for i in range(nrem, 0, -1)])
@@ -366,9 +369,10 @@ class FiniteDrinfeldModule(DrinfeldModule):
             M = Matrix(poly_K, r, r)
             for i, row in enumerate(companion_step):
                 for j, entry in enumerate(row):
-                    reduction = entry % poly_K([c**(q**(-k*nstar % n))
+                    reduction = entry % poly_K([c.frobenius(
+                                                qdeg*(-k*nstar % n))
                                                 for c in mu_coeffs])
-                    M[i, j] = poly_K([c**(q**(k*nstar))
+                    M[i, j] = poly_K([c.frobenius(qdeg*(k*nstar))
                                      for c in reduction.coefficients(
                                               sparse=False)])
             reduced_companions.append(M)
@@ -439,10 +443,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         the function ring. This generalizes the procedure from
         [Gek2008]_ for the rank 2 case.
         """
-        Fq = self._Fq
         K = self.base_over_constants_field()
         A = self.function_ring()
-        r, n = self.rank(), K.degree(Fq)
+        r, n = self.rank(), self._base_degree_over_constants
         # Compute constants that determine the block structure of the
         # linear system. The system is prepared such that the solution
         # vector has the form [a_0, a_1, ... a_{r-1}]^T with each a_i
