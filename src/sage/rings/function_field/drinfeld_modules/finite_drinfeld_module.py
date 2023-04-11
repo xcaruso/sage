@@ -194,6 +194,48 @@ class FiniteDrinfeldModule(DrinfeldModule):
         deg = self._base.over(Fq).degree(Fq)
         return self._Hom_(self, category=self.category())(t**deg)
 
+    def _frobenius_crystalline_matrix(self):
+        r"""
+        """
+        Fq = self._Fq
+        K = self.base_over_constants_field()
+        A = self.function_ring()
+        char, q = Fq.characteristic(), Fq.cardinality()
+        qdeg = logb(q, char)
+        r, n = self.rank(), self._base_degree_over_constants
+        nstar = ceil(sqrt(n))
+        nquo, nrem = divmod(n, nstar)
+        drin_coeffs = self.coefficients(sparse=False)
+        poly_K = PolynomialRing(K, name=str(A.gen()))
+        matrix_poly_K = MatrixSpace(poly_K, r, r)
+        mu_coeffs = ((poly_K.gen() - drin_coeffs[0])**(n+1)).coefficients(
+                                                             sparse=False)
+
+        def companion(order):
+            # + [1] is required to satisfy formatting for companion matrix
+            M = matrix_poly_K(companion_matrix([(drin_coeffs[i]/drin_coeffs[r])
+                               .frobenius(qdeg*order)
+                               for i in range(r)] + [1], format='top'))
+            M[0, r-1] += poly_K.gen() / drin_coeffs[r].frobenius(qdeg*order)
+            return M
+
+        companion_initial = prod([companion(i) for i in range(nrem, 0, -1)])
+        companion_step = prod([companion(i)
+                              for i in range(nstar + nrem, nrem, -1)])
+        reduced_companions = []
+        for k in range(nquo - 1, 0, -1):
+            M = Matrix(poly_K, r, r)
+            modulus = poly_K([c.frobenius(qdeg*(-k*nstar % n))
+                                                for c in mu_coeffs])
+            for i, row in enumerate(companion_step):
+                for j, entry in enumerate(row):
+                    reduction = entry % modulus
+                    M[i, j] = poly_K([c.frobenius(qdeg*(k*nstar))
+                                     for c in reduction.coefficients(
+                                              sparse=False)])
+            reduced_companions.append(M)
+        return (prod(reduced_companions) * companion_step * companion_initial)
+
     def frobenius_charpoly(self, var='X', algorithm='crystalline'):
         r"""
         Return the characteristic polynomial of the Frobenius
@@ -261,7 +303,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
             sage: phi.frobenius_charpoly(algorithm="NotImplemented")
             Traceback (most recent call last):
-            NotImplementedError: Algorithm "NotImplemented" not implemented
+            NotImplementedError: algorithm "NotImplemented" not implemented
 
         ALGORITHM:
 
@@ -269,19 +311,19 @@ class FiniteDrinfeldModule(DrinfeldModule):
         algorithm which computes the characteristic polynomial of the
         Frobenius acting on the crystalline cohomology of the Drinfeld
         module. For further details, see [Ang1997]_. Currently, the only
-        alternative is to use the *gekeler* approach based on solving
+        alternative is to use the *Gekeler* approach based on solving
         the linear system given by `t^{nr} + \sum_{i=0}^{r-1}
         \phi_{A_{i}}t^{ni} = 0`. For more details, see [Gek2008]_.
         """
-        methods = [method for method in dir(self)
-                   if method.startswith('_frobenius_charpoly_')]
+        # Throw an error if the user asks for an unimplemented algorithm
+        # even if the char poly has already been computed
         method_name = f'_frobenius_charpoly_{algorithm}'
-        if method_name in methods:
+        if hasattr(self, method_name):
             if self._frobenius_charpoly is not None:
                 return self._frobenius_charpoly
             self._frobenius_charpoly = getattr(self, method_name)(var)
             return self._frobenius_charpoly
-        raise NotImplementedError(f'Algorithm \"{algorithm}\" not implemented')
+        raise NotImplementedError(f'algorithm \"{algorithm}\" not implemented')
 
     def _frobenius_charpoly_crystalline(self, var):
         r"""
@@ -309,7 +351,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: K.<z12> = Fq.extension(6)
             sage: p_root = 2*z12^11 + 2*z12^10 + z12^9 + 3*z12^8 + z12^7 + 2*z12^5 + 2*z12^4 + 3*z12^3 + z12^2 + 2*z12
             sage: phi = DrinfeldModule(A, [p_root, z12^3, z12^5])
-            sage: phi._frobenius_charpoly_crystalline('X')
+            sage: phi.frobenius_charpoly(algorithm='crystalline') # indirect doctest
             X^2 + ((4*z2 + 4)*T^3 + (z2 + 3)*T^2 + 3*T + 2*z2 + 3)*X + 3*z2*T^6 + (4*z2 + 3)*T^5 + (4*z2 + 4)*T^4 + 2*T^3 + (3*z2 + 3)*T^2 + (z2 + 2)*T + 4*z2
 
         ::
@@ -318,7 +360,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(8)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z, z+1, 2, z+2, 1, 1, 3, 1])
-            sage: phi._frobenius_charpoly_crystalline('X')
+            sage: phi.frobenius_charpoly(algorithm='crystalline') # indirect doctest
             X^10 + X^9 + (3*T + z2 + 1)*X^8 + (4*T^2 + z2*T + 2*z2 + 1)*X^7 + ... + (4*z2 + 4)*T^4 + 4*z2*T^2 + (z2 + 2)*T + z2
 
         ::
@@ -327,7 +369,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(10)
             sage: phi = DrinfeldModule(A, [z, z^2 + z, 2, 1, z, z+1, 2, z+2, 0, 1, 1, z^2 + z])
-            sage: phi._frobenius_charpoly_crystalline('X')
+            sage: phi.frobenius_charpoly(algorithm='crystalline') # indirect doctest
             X^11 + (z3^2 + 2*z3)*X^10 + ((z3 + 1)*T + z3)*X^9 + ((2*z3^2 + z3 + 2)*T^2 + ... + (2*z3^2 + 2*z3 + 2)*T + z3^2
 
         ALGORITHM:
@@ -367,11 +409,11 @@ class FiniteDrinfeldModule(DrinfeldModule):
         reduced_companions = []
         for k in range(nquo - 1, 0, -1):
             M = Matrix(poly_K, r, r)
+            modulus = poly_K([c.frobenius(qdeg*(-k*nstar % n))
+                                                for c in mu_coeffs])
             for i, row in enumerate(companion_step):
                 for j, entry in enumerate(row):
-                    reduction = entry % poly_K([c.frobenius(
-                                                qdeg*(-k*nstar % n))
-                                                for c in mu_coeffs])
+                    reduction = entry % modulus
                     M[i, j] = poly_K([c.frobenius(qdeg*(k*nstar))
                                      for c in reduction.coefficients(
                                               sparse=False)])
@@ -383,9 +425,9 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # The above line obtains a char poly with coefficients in K[T]
         # This maps them into A = Fq[T]
         def coeff_A(coeff):
-            return A(list(map(lambda x: K(x).vector()[0], coeff)))
+            return A([K(x).vector()[0] for x in coeff])
 
-        coeffs_A = list(map(lambda coeff: coeff_A(coeff), charpoly_coeffs_K))
+        coeffs_A = [coeff_A(c) for c in charpoly_coeffs_K]
         return PolynomialRing(A, name=var)(coeffs_A)
 
     def _frobenius_charpoly_gekeler(self, var):
@@ -423,7 +465,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(6)
             sage: phi = DrinfeldModule(A, [z, 4, 1, z])
-            sage: phi._frobenius_charpoly_gekeler('X')
+            sage: phi.frobenius_charpoly(algorithm='gekeler') # indirect doctest
             X^3 + ((z2 + 2)*T^2 + (z2 + 2)*T + 4*z2 + 4)*X^2 + ... + (3*z2 + 2)*T^2 + (3*z2 + 3)*T + 4
 
         ::
@@ -432,7 +474,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: A.<T> = Fq[]
             sage: K.<z> = Fq.extension(2)
             sage: phi = DrinfeldModule(A, [z, 0, z])
-            sage: phi._frobenius_charpoly_gekeler('X')
+            sage: phi.frobenius_charpoly(algorithm='gekeler') # indirect doctest
             Traceback (most recent call last):
             NotImplementedError: 'Gekeler' algorithm failed
 
@@ -469,7 +511,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         sol = list(sys.solve_right(vec))
         # The system is solved over L, but the coefficients should all be in Fq
         # We project back into Fq here.
-        sol_Fq = list(map(lambda x: K(x).vector()[0], sol))
+        sol_Fq = [K(x).vector()[0] for x in sol]
         char_poly = []
         for i in range(r):
             char_poly.append([sol_Fq[block_shifts[i] + j]
