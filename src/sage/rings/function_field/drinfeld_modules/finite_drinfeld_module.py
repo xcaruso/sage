@@ -162,6 +162,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         super().__init__(gen, category)
         self._base_degree_over_constants = self.base_over_constants_field().degree(self._Fq)
         self._frobenius_norm = None
+        self._frobenius_trace = None
         self._frobenius_charpoly = None
 
     def frobenius_endomorphism(self):
@@ -196,6 +197,30 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def _frobenius_crystalline_matrix(self):
         r"""
+        Return the matrix representing the Frobenius endomorphism on the
+        crystalline cohomology of the Drinfeld module. This is done up to
+        precision [K:Fq] + 1, which is enough to ensure the characteristic
+        polynomial can be recovered.
+
+        For the formal construction of the crystalline cohomology, see
+        [Ang1997]_. It is a free module of rank r over the ring of Witt
+        vectors in `T - \mathfrak{p}`.
+
+        EXAMPLES::
+
+            sage: Fq = GF(25)
+            sage: A.<T> = Fq[]
+            sage: K.<z12> = Fq.extension(6)
+            sage: p_root = 2*z12^11 + 2*z12^10 + z12^9 + 3*z12^8 + z12^7 + 2*z12^5 + 2*z12^4 + 3*z12^3 + z12^2 + 2*z12
+            sage: phi = DrinfeldModule(A, [p_root, z12^3, z12^5])
+            sage: phi._frobenius_crystalline_matrix()
+            [...((z2 + 3) + z12 + (4*z2 + 1)*z12^2 + (z2 + 4)*z12^3 + (z2 + 4)*z12^4 + (2*z2 + 3)*z12^5)*T^3 + (2*z2 + 2*z2*z12 + (2*z2 + 3)*z12^2 + ... + (3*z2 + 4)*z12^3 + (2*z2 + 3)*z12^4 + 3*z2*z12^5]
+
+        ALGORITHM:
+
+        Compute the action of the Frobenius on an explicit basis for the
+        cohomology using a recurrence relation, and return the resulting
+        matrix.
         """
         Fq = self._Fq
         K = self.base_over_constants_field()
@@ -208,8 +233,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
         drin_coeffs = self.coefficients(sparse=False)
         poly_K = PolynomialRing(K, name=str(A.gen()))
         matrix_poly_K = MatrixSpace(poly_K, r, r)
-        mu_coeffs = ((poly_K.gen() - drin_coeffs[0])**(n+1)).coefficients(
-                                                             sparse=False)
+        mu_coeffs = ((poly_K.gen() - drin_coeffs[0])**(n+1)) \
+                    .coefficients(sparse=False)
 
         def companion(order):
             # + [1] is required to satisfy formatting for companion matrix
@@ -231,8 +256,8 @@ class FiniteDrinfeldModule(DrinfeldModule):
                 for j, entry in enumerate(row):
                     reduction = entry % modulus
                     M[i, j] = poly_K([c.frobenius(qdeg*(k*nstar))
-                                     for c in reduction.coefficients(
-                                              sparse=False)])
+                                     for c in reduction
+                                              .coefficients(sparse=False)])
             reduced_companions.append(M)
         return (prod(reduced_companions) * companion_step * companion_initial)
 
@@ -381,48 +406,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
         compute a matrix representation of the Frobenius endomorphism
         efficiently using a companion matrix method.
         """
-        Fq = self._Fq
-        K = self.base_over_constants_field()
         A = self.function_ring()
-        char, q = Fq.characteristic(), Fq.cardinality()
-        qdeg = logb(q, char)
-        r, n = self.rank(), self._base_degree_over_constants
-        nstar = ceil(sqrt(n))
-        nquo, nrem = divmod(n, nstar)
-        drin_coeffs = self.coefficients(sparse=False)
-        poly_K = PolynomialRing(K, name=str(A.gen()))
-        matrix_poly_K = MatrixSpace(poly_K, r, r)
-        mu_coeffs = ((poly_K.gen() - drin_coeffs[0])**(n+1)).coefficients(
-                                                             sparse=False)
+        K = self.base_over_constants_field()
+        charpoly_coeffs_K = self._frobenius_crystalline_matrix() \
+                           .charpoly(var).coefficients(sparse=False)
 
-        def companion(order):
-            # + [1] is required to satisfy formatting for companion matrix
-            M = matrix_poly_K(companion_matrix([(drin_coeffs[i]/drin_coeffs[r])
-                               .frobenius(qdeg*order)
-                               for i in range(r)] + [1], format='top'))
-            M[0, r-1] += poly_K.gen() / drin_coeffs[r].frobenius(qdeg*order)
-            return M
-
-        companion_initial = prod([companion(i) for i in range(nrem, 0, -1)])
-        companion_step = prod([companion(i)
-                              for i in range(nstar + nrem, nrem, -1)])
-        reduced_companions = []
-        for k in range(nquo - 1, 0, -1):
-            M = Matrix(poly_K, r, r)
-            modulus = poly_K([c.frobenius(qdeg*(-k*nstar % n))
-                                                for c in mu_coeffs])
-            for i, row in enumerate(companion_step):
-                for j, entry in enumerate(row):
-                    reduction = entry % modulus
-                    M[i, j] = poly_K([c.frobenius(qdeg*(k*nstar))
-                                     for c in reduction.coefficients(
-                                              sparse=False)])
-            reduced_companions.append(M)
-        charpoly_coeffs_K = (prod(reduced_companions) * companion_step *
-                             companion_initial).charpoly(var).coefficients(
-                             sparse=False)
-
-        # The above line obtains a char poly with coefficients in K[T]
+        # The above line obtains the char poly with coefficients in K[T]
         # This maps them into A = Fq[T]
         def coeff_A(coeff):
             return A([K(x).vector()[0] for x in coeff])
@@ -565,8 +554,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
     def frobenius_trace(self):
         r"""
-        Return Frobenius trace of the Drinfeld module, if the rank is
-        two; raise a NotImplementedError otherwise.
+        Return the Frobenius trace of the Drinfeld module.
 
         Let `C(X) = \sum_{i=0}^r a_iX^{i}` denote the characteristic
         polynomial of the Frobenius endomorphism. The Frobenius trace
@@ -597,10 +585,21 @@ class FiniteDrinfeldModule(DrinfeldModule):
 
         ALGORITHM:
 
-            We extract the coefficient of `X^{r-1}` from the
-            characteristic polynomial.
+            We extract the coefficient of `X^{r-1}` from the characteristic
+            polynomial if it has been previously computed, otherwise we compute
+            the trace of the matrix of the Frobenius acting on the crystalline
+            cohomology.
         """
-        return -self.frobenius_charpoly().coefficients(sparse=False)[-2]
+        K = self.base_over_constants_field()
+        A = self.function_ring()
+        if self._frobenius_trace is not None:
+            return self._frobenius_trace
+        if self._frobenius_charpoly is not None:
+            self._frobenius_trace = -self._frobenius_charpoly \
+                                    .coefficients(sparse=False)[-2]
+        self._frobenius_trace = self._frobenius_crystalline_matrix().trace()
+        self._frobenius_trace = A([K(x).vector()[0] for x in self._frobenius_trace])
+        return self._frobenius_trace
 
     def invert(self, ore_pol):
         r"""
@@ -736,7 +735,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
             sage: mu = 1
             sage: phi.is_isogenous(mu)
             Traceback (most recent call last):
-            TypeError: Input must be a Drinfeld module
+            TypeError: input must be a Drinfeld module
 
         ALGORITHM:
 
@@ -748,7 +747,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
           for both Drinfeld modules are equal.
         """
         if not isinstance(psi, DrinfeldModule):
-            raise TypeError("Input must be a Drinfeld module")
+            raise TypeError("input must be a Drinfeld module")
         if self.category() != psi.category():
             raise TypeError("Drinfeld modules are not in the same category")
         return self.rank() == psi.rank() \
