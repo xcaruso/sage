@@ -505,6 +505,29 @@ class FiniteDrinfeldModule(DrinfeldModule):
                               for j in range(shifts[i])])
         return PolynomialRing(self._function_ring)(char_poly + [1])
 
+    @cached_method
+    def _frobenius_charpoly_CSA(self):
+        E = self._base
+        EZ = PolynomialRing(E, name='Z')
+        n = self._base_degree_over_constants
+        P = self.gen()
+        t = self.ore_variable()
+        rows = [ ]
+        for i in range(n):
+            m = P.degree() + 1
+            row = [EZ([P[jj] for jj in range(j, m, n)]) for j in range(n)]
+            rows.append(row)
+            P = t * P
+        chi = Matrix(rows).charpoly()
+        # We format the result
+        K = self.base_over_constants_field()
+        A = self.function_ring()
+        r = self.rank()
+        lc = chi[0][r]
+        coeffs = [ A([K(chi[i][j]/lc).in_base() for i in range(r+n+1)])
+                   for j in range(r+1) ]
+        return PolynomialRing(A, name='X')(coeffs)
+
     def frobenius_norm(self):
         r"""
         Return the Frobenius norm of the Drinfeld module.
