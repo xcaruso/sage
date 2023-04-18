@@ -27,6 +27,10 @@ from sage.categories.action import Action
 from sage.misc.latex import latex
 from sage.rings.function_field.drinfeld_modules.morphism import DrinfeldModuleMorphism
 from sage.structure.parent import Parent
+from sage.functions.log import logb
+from sage.matrix.constructor import Matrix
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.misc.randstate import set_random_seed
 
 
 class DrinfeldModuleMorphismAction(Action):
@@ -382,3 +386,161 @@ class DrinfeldModuleHomset(Homset):
         # would call __init__ instead of __classcall_private__. This
         # seems to work, but I don't know what I'm doing.
         return DrinfeldModuleMorphism(self, *args, **kwds)
+
+    def element(self, degree):
+        r"""
+        Return an element of the space of morphisms between the domain and
+        codomain. By default, chooses an element of largest degree less than
+        or equal to the parameter `degree`.
+
+        INPUT:
+
+        - ``degree`` -- the maximum degree of the morphism
+
+        OUTPUT: a univariate ore polynomials with coefficients in `K`
+
+        EXAMPLES::
+
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: H = Hom(phi, psi)
+            sage: M = H.element(3)
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
+            0
+
+        ALGORITHM:
+
+            We scan the basis for the first element of maximal degree
+            and return it.
+        """
+        basis = self.basis(degree)
+        elem = basis[0]
+        max_deg = elem.ore_polynomial().degree()
+        for basis_elem in basis:
+            if basis_elem.ore_polynomial().degree() > max_deg:
+                elem = basis_elem
+                max_deg = elem.ore_polynomial().degree()
+        return elem
+
+    def basis(self, degree):
+        r"""
+        Return a basis for the `\mathbb{F}_q`-space of morphisms from self to
+        a Drinfeld module `\psi` of degree at most `degree`. A morphism
+        `\iota: \phi \to psi` is an element `\iota \in K\{\tau\}` such that
+        `iota \phi_T = \psi_T \iota`. The degree of a morphism is the
+        `\tau`-degree of `\iota`.
+
+        INPUT:
+
+        - ``degree`` -- the maximum degree of the morphism
+
+        OUTPUT: a list of univariate ore polynomials with coefficients in `K`
+
+        EXAMPLES::
+
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: H = Hom(phi, psi)
+            sage: B = H.basis(3)
+            sage: M = B[0]
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
+            0
+
+        ALGORITHM:
+
+            We return the basis of the kernel of a matrix derived from the
+            constraint that `\iota \phi_T = \psi_T \iota`. See [Wes2022]_ for
+            details on this algorithm.
+        """
+        domain, codomain = self.domain(), self.codomain()
+        Fq = domain._Fq
+        K = domain.base_over_constants_field()
+        q = Fq.cardinality()
+        char = Fq.characteristic()
+        r = domain.rank()
+        n = K.degree(Fq)
+        # shorten name for readability
+        d = degree
+        qorder = logb(q, char)
+        K_basis = K.basis_over(Fq)
+        # This weird casting is done to allow extraction
+        # of coefficients in non-sparse mode from field elements
+        # There really should be a cleaner way to do this
+        pol_var = K_basis[0].polynomial().parent().gen()
+        pol_ring = PolynomialRing(Fq, str(pol_var))
+        dom_coeffs = domain.coefficients(sparse=False)
+        cod_coeffs = codomain.coefficients(sparse=False)
+        frob_matrices = []
+
+        # Compute matrices for the Frobenius operator for
+        # K over Fq
+        for order in range(d + r):
+            frob = Matrix(Fq, n, n)
+            for i, elem in enumerate(K_basis):
+                col = pol_ring(elem.frobenius(qorder*order).polynomial()) \
+                      .coefficients(sparse=False)
+                col += [0 for _ in range(n - len(col))]
+                for j in range(n):
+                    frob[j, i] = col[j]
+            frob_matrices.append(frob)
+
+        sys = Matrix(Fq, (d + r + 1)*n, (d + 1)*n)
+        for k in range(0, d + r + 1):
+            for i in range(max(0, k - r), min(k, d) + 1):
+                # We represent multiplication and Frobenius
+                # as operators acting on K as a vector space
+                # over Fq
+                # Require matrices act on the right, so we
+                # take a transpose of operators here
+                oper = K(dom_coeffs[k-i]
+                       .frobenius(qorder*i)).matrix().transpose() \
+                       - K(cod_coeffs[k-i]).matrix().transpose() \
+                       * frob_matrices[k - i]
+                for j in range(n):
+                    for l in range(n):
+                        sys[k*n + j, i*n + l] = oper[j, l]
+        sol = sys.right_kernel().basis()
+        # Reconstruct the Ore polynomial from the coefficients
+        basis = []
+        tau = domain.ore_polring().gen()
+        for basis_elem in sol:
+            basis.append(self(sum([sum([K_basis[j]*basis_elem[i*n + j]
+                               for j in range(n)])*(tau**i)
+                               for i in range(d + 1)])))
+        return basis
+
+    def random_element(self, degree, seed=None):
+        r"""
+        Return a random morphism chosen uniformly from the space of morphisms
+        of degree at most `degree`.
+
+        INPUT:
+
+        - ``degree`` -- the maximum degree of the morphism
+
+        OUTPUT: a univariate ore polynomials with coefficients in `K`
+
+        EXAMPLES::
+
+            sage: Fq = GF(2)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: psi = DrinfeldModule(A, [z, z + 1, z^2 + z + 1])
+            sage: phi = DrinfeldModule(A, [z, z^2 + z + 1, z^2 + z])
+            sage: H = Hom(phi, psi)
+            sage: M = H.random_element(3, seed=25)
+            sage: M_poly = M.ore_polynomial()
+            sage: M_poly*phi.gen() - psi.gen()*M_poly
+            0
+        """
+        set_random_seed(seed)
+        return self(sum([self.domain()._Fq.random_element()
+                    * elem.ore_polynomial() for elem in self.basis(degree)]))
