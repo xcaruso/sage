@@ -21,15 +21,18 @@ AUTHORS:
 #                   http://www.gnu.org/licenses/
 # *****************************************************************************
 
+from sage.misc.misc_c import prod
+from sage.misc.cachefunc import cached_method
+from sage.functions.other import ceil, sqrt
+from sage.functions.log import logb
+
 from sage.matrix.constructor import Matrix
 from sage.matrix.matrix_space import MatrixSpace
 from sage.matrix.special import companion_matrix
 from sage.modules.free_module_element import vector
+
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.function_field.drinfeld_modules.drinfeld_module import DrinfeldModule
-from sage.functions.other import ceil, sqrt
-from sage.functions.log import logb
-from sage.misc.misc_c import prod
 
 
 class FiniteDrinfeldModule(DrinfeldModule):
@@ -163,7 +166,6 @@ class FiniteDrinfeldModule(DrinfeldModule):
         self._base_degree_over_constants = self.base_over_constants_field().degree(self._Fq)
         self._frobenius_norm = None
         self._frobenius_trace = None
-        self._frobenius_charpoly = None
 
     def frobenius_endomorphism(self):
         r"""
@@ -194,6 +196,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         deg = self.base_over_constants_field().degree_over()
         return self._Hom_(self, category=self.category())(t**deg)
 
+    @cached_method
     def _frobenius_crystalline_matrix(self):
         r"""
         Return the matrix representing the Frobenius endomorphism on the
@@ -343,13 +346,15 @@ class FiniteDrinfeldModule(DrinfeldModule):
         # even if the char poly has already been computed
         method_name = f'_frobenius_charpoly_{algorithm}'
         if hasattr(self, method_name):
-            if self._frobenius_charpoly is not None:
-                return self._frobenius_charpoly
-            self._frobenius_charpoly = getattr(self, method_name)(var)
-            return self._frobenius_charpoly
+            chi = getattr(self, method_name)()
+            return chi.change_variable_name(var)
         raise NotImplementedError(f'algorithm \"{algorithm}\" not implemented')
 
-    def _frobenius_charpoly_crystalline(self, var):
+    @cached_method
+    def _frobenius_charpoly_motive(self):
+        return self.frobenius_endomorphism().charpoly()
+
+    def _frobenius_charpoly_crystalline(self):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism using Crystalline cohomology.
@@ -407,18 +412,12 @@ class FiniteDrinfeldModule(DrinfeldModule):
         """
         A = self.function_ring()
         K = self.base_over_constants_field()
-        charpoly_coeffs_K = self._frobenius_crystalline_matrix() \
-                           .charpoly(var).coefficients(sparse=False)
+        charpoly = self._frobenius_crystalline_matrix().charpoly()
+        coeffs_A = [A([K(x).in_base() for x in c]) for c in charpoly.list()]
+        return PolynomialRing(A, name='X')(coeffs_A)
 
-        # The above line obtains the char poly with coefficients in K[T]
-        # This maps them into A = Fq[T]
-        def coeff_A(coeff):
-            return A([K(x).vector()[0] for x in coeff])
-
-        coeffs_A = [coeff_A(c) for c in charpoly_coeffs_K]
-        return PolynomialRing(A, name=var)(coeffs_A)
-
-    def _frobenius_charpoly_gekeler(self, var):
+    @cached_method
+    def _frobenius_charpoly_gekeler(self):
         r"""
         Return the characteristic polynomial of the Frobenius
         endomorphism using Gekeler's algorithm.
@@ -504,7 +503,7 @@ class FiniteDrinfeldModule(DrinfeldModule):
         for i in range(r):
             char_poly.append([sol_Fq[block_shifts[i] + j]
                               for j in range(shifts[i])])
-        return PolynomialRing(self._function_ring, name=var)(char_poly + [1])
+        return PolynomialRing(self._function_ring)(char_poly + [1])
 
     def frobenius_norm(self):
         r"""
