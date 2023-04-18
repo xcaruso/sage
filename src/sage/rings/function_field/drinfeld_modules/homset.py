@@ -517,6 +517,109 @@ class DrinfeldModuleHomset(Homset):
                                for i in range(d + 1)])))
         return basis
 
+    def _an_element_(self):
+        r"""
+        Return a morphism in this homset.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: End(phi).an_element()  # indirect doctest
+            Endomorphism of Drinfeld module defined by T |--> z*t^3 + t^2 + z
+              Defn: z*t^3 + t^2 + z
+
+        ::
+
+            sage: psi = DrinfeldModule(A, [z, 0, 1, z^2])
+            sage: Hom(phi, psi).an_element()  # indirect doctest
+            Drinfeld Module morphism:
+              From: Drinfeld module defined by T |--> z*t^3 + t^2 + z
+              To:   Drinfeld module defined by T |--> z^2*t^3 + t^2 + z
+              Defn: 0
+
+        """
+        domain = self.domain()
+        if self.codomain() is domain:
+            a = domain.function_ring().an_element()
+            return self(a)
+        return self.zero()
+
+    def zero(self):
+        r"""
+        Return the zero morphism in this homset.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: psi = DrinfeldModule(A, [z, 0, 1, z^2])
+            sage: H = Hom(phi, psi)
+            sage: H.zero()
+            Drinfeld Module morphism:
+              From: Drinfeld module defined by T |--> z*t^3 + t^2 + z
+              To:   Drinfeld module defined by T |--> z^2*t^3 + t^2 + z
+              Defn: 0
+
+        """
+        Kt = self.domain().ore_polring()
+        return self(Kt.zero())
+
+    def identity(self):
+        r"""
+        Return the identity morphism in this homset.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: E = End(phi)
+            sage: E.identity()
+            Identity morphism of Drinfeld module defined by T |--> z*t^3 + t^2 + z
+
+        When the domain is not equal to the codomain, an
+        error is raised:
+
+            sage: psi = DrinfeldModule(A, [z, 0, 1, z^2])
+            sage: H = Hom(phi, psi)
+            sage: H.identity()
+            Traceback (most recent call last):
+            ...
+            ValueError: identity map only defined for endomorphisms
+
+        """
+        if self.domain() is not self.codomain():
+            raise ValueError("identity map only defined for endomorphisms")
+        Kt = self.domain().ore_polring()
+        return self(Kt.one())
+
+    def one(self):
+        r"""
+        Return the identity morphism in this homset.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: E = End(phi)
+            sage: E.one()
+            Identity morphism of Drinfeld module defined by T |--> z*t^3 + t^2 + z
+
+        .. SEEALSO:
+
+            :meth:`identity`
+
+        """
+        return self.identity()
+
     def random_element(self, degree, seed=None):
         r"""
         Return a random morphism chosen uniformly from the space of morphisms
@@ -544,3 +647,73 @@ class DrinfeldModuleHomset(Homset):
         set_random_seed(seed)
         return self(sum([self.domain()._Fq.random_element()
                     * elem.ore_polynomial() for elem in self.basis(degree)]))
+
+    def is_zero(self):
+        r"""
+        Return ``True`` if this homset only contains the
+        zero morphism, that is if the domain is isogenous
+        to the codomain.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: psi = DrinfeldModule(A, [z, 0, 1, z^2])
+            sage: Hom(phi, psi).is_zero()
+            True
+
+        ::
+
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: psi = DrinfeldModule(A, [z, 2*z^2 + 3*z + 4, 3*z^2 + 2*z + 2, 2*z^2 + 4*z + 4])
+            sage: Hom(phi, psi).is_zero()
+            False
+
+        .. SEE ALSO::
+
+            :meth:`an_isogeny`
+
+        """
+        if self.domain() is self.codomain():
+            return False
+        return not self.domain().is_isogenous(self.codomain())
+
+    def an_isogeny(self):
+        r"""
+        Return an isogeny (i.e. a nonzero morphism) in this homset.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 0, 1, z])
+            sage: psi = DrinfeldModule(A, [z, 2*z^2 + 3*z + 4, 3*z^2 + 2*z + 2, 2*z^2 + 4*z + 4])
+            sage: H = Hom(phi, psi)
+            sage: H.an_isogeny()
+            Drinfeld Module morphism:
+              From: Drinfeld module defined by T |--> z*t^3 + t^2 + z
+              To:   Drinfeld module defined by T |--> (2*z^2 + 4*z + 4)*t^3 + (3*z^2 + 2*z + 2)*t^2 + (2*z^2 + 3*z + 4)*t + z
+              Defn: t + 1
+
+        If the domain and the codomain are not isogenous, an error
+        is raised::
+
+            sage: psi = DrinfeldModule(A, [z, 0, 1, z^2])
+            sage: H = Hom(phi, psi)
+            sage: H.an_isogeny()
+            Traceback (most recent call last):
+            ...
+            ValueError: there is no isogeny in this homset
+
+        """
+        if self.is_zero():
+            raise ValueError("there is no isogeny in this homset")
+        degree = 2
+        while True:
+            basis = self.basis(degree)
+            if len(basis):
+                return basis[0]
+            degree *= 2
