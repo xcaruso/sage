@@ -477,7 +477,7 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
         """
         return H(self.ore_polynomial() * other.ore_polynomial())
 
-    def __invert__(self):
+    def inverse(self):
         r"""
         Return the inverse of this morphism.
 
@@ -497,6 +497,17 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
             Endomorphism of Drinfeld module defined by T |--> z^2*t^3 + z*t^2 + t + z
               Defn: 3
 
+            sage: g = phi.hom(z); g
+            Drinfeld Module morphism:
+              From: Drinfeld module defined by T |--> z^2*t^3 + z*t^2 + t + z
+              To:   Drinfeld module defined by T |--> z^2*t^3 + (z^2 + 2*z + 3)*t^2 + (z^2 + 3*z)*t + z
+              Defn: z
+            sage: g.inverse()  # indirect doctest
+            Drinfeld Module morphism:
+              From: Drinfeld module defined by T |--> z^2*t^3 + z*t^2 + t + z
+              To:   Drinfeld module defined by T |--> z^2*t^3 + (z^2 + 2*z + 3)*t^2 + (z^2 + 3*z)*t + z
+              Defn: 3*z^2 + 4
+
         ::
 
             sage: F = phi.frobenius_endomorphism()
@@ -508,7 +519,28 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
         """
         if not self.is_isomorphism():
             raise ZeroDivisionError("this morphism is not invertible")
-        return self.parent()(~(self.ore_polynomial()[0]))
+        H = self.codomain().Hom(self.domain())
+        u = self.ore_polynomial()[0]
+        return H(~u)
+
+    def __invert__(self):
+        r"""
+        Return the inverse of this endomorphism.
+
+        EXAMPLES::
+
+            sage: Fq = GF(5)
+            sage: A.<T> = Fq[]
+            sage: K.<z> = Fq.extension(3)
+            sage: phi = DrinfeldModule(A, [z, 1, z, z^2])
+            sage: f = phi.hom(2); f
+            Endomorphism of Drinfeld module defined by T |--> z^2*t^3 + z*t^2 + t + z
+              Defn: 2
+            sage: f^(-1)  # indirect doctest
+            Endomorphism of Drinfeld module defined by T |--> z^2*t^3 + z*t^2 + t + z
+              Defn: 3
+        """
+        return self.inverse()
 
     def _motive_matrix(self):
         r"""
