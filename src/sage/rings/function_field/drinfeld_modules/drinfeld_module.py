@@ -1506,8 +1506,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
                 raise ValueError("components of tuple or list parameter have "
                                  "incorrect length")
             try:
-                parameter[0] = [ZZ(p) for p in parameter[0]]
-                parameter[1] = [ZZ(p) for p in parameter[1]]
+                parameter = [[ZZ(p) for p in parameter[i]] for i in range(2)]
             except TypeError:
                 raise TypeError("components of tuple or list parameter must "
                                 "contain only integers")
