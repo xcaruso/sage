@@ -1552,7 +1552,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
                                 "if the rank is greater than 2")
             return self._gen[1]**(q+1)/self._gen[2]
         if parameter in ZZ:
-            paramter = ZZ(parameter)
+            parameter = ZZ(parameter)
             if parameter <= 0 or parameter >= r:
                 raise ValueError("integer parameter must be >= 1 and < the "
                                  f"rank (={r})")
