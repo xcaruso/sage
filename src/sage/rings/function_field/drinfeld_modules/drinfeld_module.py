@@ -928,7 +928,6 @@ class DrinfeldModule(Parent, UniqueRepresentation):
              ((1, 2), (13, 3, 1)),
              ((1, 2), (19, 2, 1)),
              ((1, 2), (25, 1, 1)),
-             ((1, 2), (31, 0, 1)),
              ((1, 2), (8, 9, 2)),
              ((1, 2), (20, 7, 2)),
              ((1, 2), (9, 14, 3)),
@@ -940,7 +939,6 @@ class DrinfeldModule(Parent, UniqueRepresentation):
              ((1, 2), (17, 23, 5)),
              ((1, 2), (23, 22, 5)),
              ((1, 2), (29, 21, 5)),
-             ((1, 2), (0, 31, 6)),
              ((1, 2), (12, 29, 6)),
              ((1, 2), (31, 31, 7))]
 
@@ -960,9 +958,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: phi.basic_j_invariant_parameters([1, 2])
             [((1, 2), (1, 2, 1)),
              ((1, 2), (4, 1, 1)),
-             ((1, 2), (7, 0, 1)),
              ((1, 2), (5, 3, 2)),
-             ((1, 2), (0, 7, 3)),
              ((1, 2), (6, 5, 3)),
              ((1, 2), (7, 7, 4))]
 
@@ -1035,7 +1031,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         for idx, i in enumerate(coeff_indices):
             equation.append(q**i - 1)
             # Create inequalities of the form 0 <= delta_i
-            lower_bounds = [0] * (len(coeff_indices) + 2)
+            lower_bounds = [-1] + [0] * (len(coeff_indices) + 1)
             lower_bounds[idx + 1] = 1
             # Create inequalities of the form
             #   delta_i <= (q^r - 1)/(q^{gcd(i,r)} - 1)
@@ -1052,12 +1048,26 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         return [(tuple(coeff_indices), tuple(p)) for p in integral_points
                 if gcd(p) == 1]
 
-    def basic_j_invariants(self):
+    def basic_j_invariants(self, nonzero=False):
         r"""
         Return a dictionary whose keys are all the basic `j`-invariants
         parameters and values are the corresponding `j`-invariant.
 
         See the method :meth:`j_invariant` for definitions.
+
+        INPUT:
+
+        - ``nonzero`` (boolean, default: ``False``) -- if this flag
+          is set to ``True``, then only the parameters for which the
+          corresponding basic `j`-invariant is nonzero are returned.
+
+        .. WARNING::
+
+            The usage of this method can be computationally
+            expensive e.g. if the rank is greater than four,
+            or if `q` is large. Setting the ``nonzero`` flag to ``True``
+            can speed up the computation considerably if the Drinfeld
+            module generator possesses multiple zero coefficients.
 
         EXAMPLES::
 
@@ -1071,12 +1081,17 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
         ::
 
+            sage: phi = DrinfeldModule(A, [p_root, 0, 1, z12])
+            sage: phi.basic_j_invariants(nonzero=True)
+            {((2,), (651, 26)): z12^11 + 3*z12^10 + 4*z12^9 + 3*z12^8 + z12^7 + 2*z12^6 + 3*z12^4 + 2*z12^3 + z12^2 + 4*z12}
+
+        ::
+
             sage: A = GF(5)['T']
             sage: K.<T> = Frac(A)
             sage: phi = DrinfeldModule(A, [T, T + 2, T+1, 1])
             sage: J_phi = phi.basic_j_invariants(); J_phi
-            {((1, 2), (0, 31, 6)): T^31 + T^30 + T^26 + T^25 + T^6 + T^5 + T + 1,
-             ((1, 2), (1, 5, 1)): T^6 + 2*T^5 + T + 2,
+            {((1, 2), (1, 5, 1)): T^6 + 2*T^5 + T + 2,
              ((1, 2), (7, 4, 1)): T^11 + 3*T^10 + T^9 + 4*T^8 + T^7 + 2*T^6 + 2*T^4 + 3*T^3 + 2*T^2 + 3,
              ((1, 2), (8, 9, 2)): T^17 + 2*T^15 + T^14 + 4*T^13 + 4*T^11 + 4*T^10 + 3*T^9 + 2*T^8 + 3*T^7 + 2*T^6 + 3*T^5 + 2*T^4 + 3*T^3 + 4*T^2 + 3*T + 1,
              ((1, 2), (9, 14, 3)): T^23 + 2*T^22 + 2*T^21 + T^19 + 4*T^18 + T^17 + 4*T^16 + T^15 + 4*T^14 + 2*T^12 + 4*T^11 + 4*T^10 + 2*T^8 + 4*T^7 + 4*T^6 + 2*T^4 + T^2 + 2*T + 2,
@@ -1087,7 +1102,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             T^11 + 3*T^10 + T^9 + 4*T^8 + T^7 + 2*T^6 + 2*T^4 + 3*T^3 + 2*T^2 + 3
         """
         return {parameter: self.j_invariant(parameter, check=False)
-                for parameter in self.basic_j_invariant_parameters()}
+                for parameter in self.basic_j_invariant_parameters(nonzero=nonzero)}
 
     def coefficient(self, n):
         r"""
@@ -1537,6 +1552,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
                                 "if the rank is greater than 2")
             return self._gen[1]**(q+1)/self._gen[2]
         if parameter in ZZ:
+            paramter = ZZ(parameter)
             if parameter <= 0 or parameter >= r:
                 raise ValueError("integer parameter must be >= 1 and < the "
                                  f"rank (={r})")
@@ -1554,8 +1570,10 @@ class DrinfeldModule(Parent, UniqueRepresentation):
                        not len(parameter[1]) == len(parameter[0]) + 1:
                 raise ValueError("components of tuple or list parameter have "
                                  "incorrect length")
-            if not all(p in ZZ for p in parameter[0])\
-                    or not all(p in ZZ for p in parameter[1]):
+            try:
+                parameters[0] = [ZZ(p) for p in parameters[0]]
+                parameters[1] = [ZZ(p) for p in parameters[1]]
+            except TypeError:
                 raise TypeError("components of tuple or list parameter must "
                                 "contain only integers")
             # Check that the weight-0 condition is satisfied:
