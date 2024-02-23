@@ -608,6 +608,12 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
 
         return matrix(KT, rows)
 
+    def motive(self):
+        from sage.rings.function_field.drinfeld_modules.anderson_motive_morphism import AndersonMotiveMorphism
+        parent = self.domain().motive().Hom(self.codomain().motive())
+        M = self._motive_matrix()
+        return AndersonMotiveMorphism(parent, M)
+
     def norm(self, ideal=True):
         r"""
         Return the norm of this isogeny.

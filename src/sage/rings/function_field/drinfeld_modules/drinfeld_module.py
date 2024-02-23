@@ -30,6 +30,7 @@ from sage.arith.misc import gcd
 from sage.categories.drinfeld_modules import DrinfeldModules
 from sage.categories.homset import Hom
 from sage.geometry.polyhedron.constructor import Polyhedron
+from sage.matrix.constructor import matrix
 from sage.misc.latex import latex
 from sage.misc.latex import latex_variable_name
 from sage.misc.lazy_import import lazy_import
@@ -2065,3 +2066,20 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         if not self.function_ring().has_coerce_map_from(x.parent()):
             raise ValueError("%s is not element of the function ring" % x)
         return self.Hom(self)(x)
+
+    def motive(self):
+        from sage.categories.anderson_motives import AndersonMotives
+        from sage.rings.function_field.drinfeld_modules.anderson_motive import AndersonMotive
+        category = AndersonMotives(self.category())
+        A = self.function_ring()
+        K = self.base_ring()
+        AK = A.change_ring(K)
+        r = self.rank()
+        tau = matrix(AK, r)
+        P = self.gen()
+        tau[r-1, 0] = (AK.gen() - P[0]) / P[r]
+        for i in range(1, r):
+            tau[i-1, i] = 1
+            tau[r-1, i] = -P[i]/P[r]
+        return AndersonMotive(category, tau, check=False)
+
