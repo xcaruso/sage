@@ -65,8 +65,6 @@ class AndersonMotiveMorphism(Morphism):
 
     def norm(self, ideal=True):
         nu = self._matrix.det()
-        print(nu)
-        print(nu.parent())
         # We cast to A
         A = self.domain().function_ring()
         if ideal:
@@ -76,6 +74,14 @@ class AndersonMotiveMorphism(Morphism):
             return A([c.in_base() for c in nu.list()])
         else:
             raise ValueError("norm is defined as an actual element only for endomorphisms")
+
+    def trace(self):
+        if self.domain() is not self.codomain():
+            raise ValueError("trace is only defined for endomorphisms")
+        tr = self._matrix.trace()
+        # We cast to A
+        A = self.domain().function_ring()
+        return A([c.in_base() for c in tr.list()])
 
     def characteristic_polynomial(self, var='X'):
         if self.domain() is not self.codomain():
