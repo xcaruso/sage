@@ -503,6 +503,9 @@ class DrinfeldModules(Category_over_base_ring):
                              'category')
         return DrinfeldModule(self._function_ring, gen)
 
+    def _call_(self, gen):
+        return self.object(gen)
+
     def ore_polring(self):
         r"""
         Return the Ore polynomial ring of the category
@@ -572,6 +575,10 @@ class DrinfeldModules(Category_over_base_ring):
             [Category of objects]
         """
         return [Objects()]
+
+    def anderson_motives(self):
+        from sage.categories.anderson_motives import AndersonMotives
+        return AndersonMotives(self)
 
     class ParentMethods:
 

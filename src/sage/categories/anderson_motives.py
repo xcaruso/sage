@@ -30,6 +30,7 @@ class AndersonMotives(Category_over_base_ring):
     def __init__(self, category):
         if not isinstance(category, DrinfeldModules):
             category = DrinfeldModules(category)
+        self._drinfeld_modules = category
         self._base_field = K = category.base()
         self._base_morphism = category.base_morphism()
         self._function_ring = A = category.function_ring()
@@ -77,8 +78,12 @@ class AndersonMotives(Category_over_base_ring):
     def function_ring(self):
         return self._function_ring
 
-    def object(self, gen):
-        raise NotImplementedError
+    def object(self, tau, twist=0):
+        from sage.rings.function_field.drinfeld_modules.anderson_motive import AndersonMotive
+        return AndersonMotive(self, tau, twist)
+
+    def _call_(self, tau, twist=0):
+        return self.object(tau, twist)
 
     def super_categories(self):
         """
@@ -94,6 +99,9 @@ class AndersonMotives(Category_over_base_ring):
             [Category of objects]
         """
         return [Objects()]
+
+    def drinfeld_modules(self):
+        return self._drinfeld_modules
 
     class ParentMethods:
 
