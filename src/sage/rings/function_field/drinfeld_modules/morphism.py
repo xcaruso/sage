@@ -610,7 +610,7 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
 
     def motive(self):
         from sage.rings.function_field.drinfeld_modules.anderson_motive_morphism import AndersonMotiveMorphism
-        parent = self.domain().motive().Hom(self.codomain().motive())
+        parent = self.codomain().motive().Hom(self.domain().motive())
         M = self._motive_matrix()
         return AndersonMotiveMorphism(parent, M)
 

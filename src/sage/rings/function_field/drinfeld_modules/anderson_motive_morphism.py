@@ -32,7 +32,7 @@ class AndersonMotiveMorphism(Morphism):
         M = M.change_ring(AK)
         tM = M.parent()([AK([x**q for x in entry.list()])
                          for entry in M.list()])
-        if Y.matrix() * M != tM * X.matrix():
+        if X.matrix() * M != tM * Y.matrix():
             raise ValueError("do not commute with tau")
         self._matrix = M
 
@@ -61,7 +61,7 @@ class AndersonMotiveMorphism(Morphism):
         return self.parent()(self.matrix() + other.matrix())
 
     def _composition_(self, other, H):
-        return H(self.matrix() * other.matrix())
+        return H(other.matrix() * self.matrix())
 
     def norm(self, ideal=True):
         nu = self._matrix.det()
