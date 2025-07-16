@@ -34,6 +34,7 @@ from sage.misc.latex import latex
 from sage.misc.latex import latex_variable_name
 from sage.misc.lazy_import import lazy_import
 from sage.misc.lazy_string import _LazyString
+from sage.matrix.constructor import matrix
 from sage.misc.misc_c import prod
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
@@ -2076,3 +2077,25 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         if not self.function_ring().has_coerce_map_from(x.parent()):
             raise ValueError("%s is not element of the function ring" % x)
         return self.Hom(self)(x)
+
+    def anderson_motive(self, names=None):
+        from sage.rings.function_field.anderson_motives.anderson_motive import AndersonMotive_general
+        from sage.rings.function_field.anderson_motives.morphism import DrinfeldToAnderson, AndersonToDrinfeld
+        from sage.categories.anderson_motives import AndersonMotives
+        from sage.categories.homset import Homset
+        category = AndersonMotives(self.category())
+        A = category.function_ring()
+        K = category._base_field
+        AK = A.change_ring(K)
+        r = self.rank()
+        tau = matrix(AK, r)
+        P = self.gen()
+        tau[r-1, 0] = (AK.gen() - P[0]) / P[r]
+        for i in range(1, r):
+            tau[i-1, i] = 1
+            tau[r-1, i] = -P[i]/P[r]
+        M = AndersonMotive_general(category, tau, names=names)
+        Ktau = self.ore_polring()
+        M.register_coercion(DrinfeldToAnderson(Homset(Ktau, M), self))
+        Ktau.register_conversion(AndersonToDrinfeld(Homset(M, Ktau), self))
+        return M
