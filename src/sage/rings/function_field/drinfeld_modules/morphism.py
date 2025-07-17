@@ -817,3 +817,8 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
             Y^3 + (T + 1)*Y^2 + (2*T + 3)*Y + 2*T^3 + T + 1
         """
         return self.characteristic_polynomial(var)
+
+    def anderson_motive(self, names_domain=None, names_codomain=None):
+        M = self.domain().anderson_motive(names=names_domain)
+        N = self.codomain().anderson_motive(names=names_codomain)
+        return M.hom({M.gen(0): self._ore_polynomial * N.gen(0)})

@@ -12,15 +12,10 @@ import operator
 
 from sage.misc.lazy_attribute import lazy_attribute
 from sage.misc.latex import latex
-
 from sage.misc.functional import log
-from sage.misc.mrange import mrange
-from sage.misc.misc_c import prod
-from sage.sets.set import Set
 
-from sage.modules.ore_module import OreModule
-from sage.modules.ore_module import OreAction
-from sage.modules.ore_module import normalize_names
+from sage.categories.homset import Homset
+from sage.categories.anderson_motives import AndersonMotives
 
 from sage.rings.integer_ring import ZZ
 from sage.rings.infinity import Infinity
@@ -29,6 +24,12 @@ from sage.rings.fraction_field import FractionField_1poly_field
 
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix, block_diagonal_matrix
+
+from sage.modules.ore_module import OreModule
+from sage.modules.ore_module import OreAction
+from sage.modules.ore_module import normalize_names
+
+from sage.rings.function_field.anderson_motives.morphism import DrinfeldToAnderson, AndersonToDrinfeld
 
 
 
@@ -97,18 +98,31 @@ class AndersonMotive_general(OreModule):
         det = self._tau.det()
         return det.leading_coefficient(), det.degree()
 
-    def __repr__(self):
-        s = "Anderson motive of rank %s over %s" % (self.rank(), self._AK)
-        if self.rank() < 10:
-            s += "\nDefining matrix:\n" + str(self.matrix())
+    def _repr_(self):
+        s = "Anderson motive "
+        if self._names is None:
+            s += "of rank %s " % self.rank()
+        else:
+            s += "<" + ", ".join(self._names) + "> "
+        s += "over %s" % self._AK
         return s
 
     def _latex_(self):
-        return latex(self.matrix())
+        if self._names is None:
+            s = "\\texttt{Anderson motive of rank } %s" % self.rank()
+            s += "\\texttt{ over } %s" % latex(self._AK)
+        else:
+            s = "\\left<" + ", ".join(self._latex_names) + "\\right>"
+            s += "_{%s}" % latex(self._AK)
+        return s
 
     def twist(self, n):
         n = ZZ(n)
         return AndersonMotive_general(self._category, self._tau, self._twist + n, normalize=False)
+
+    def _Hom_(self, codomain, category):
+        from sage.rings.function_field.anderson_motives.morphism import AndersonMotive_homspace
+        return AndersonMotive_homspace(self, codomain)
 
     def hodge_pink_weights(self):
         S = self._tau.smith_form(transformation=False)
@@ -135,3 +149,28 @@ class AndersonMotive_general(OreModule):
         vs = [AK.random_element(*args, **kwds) for _ in range(r)]
         return self(vs)
 
+
+class AndersonMotive_drinfeld(AndersonMotive_general):
+    def __init__(self, phi, names):
+        category = AndersonMotives(phi.category())
+        A = category.function_ring()
+        K = category._base_field
+        AK = A.change_ring(K)
+        r = phi.rank()
+        tau = matrix(AK, r)
+        P = phi.gen()
+        tau[r-1, 0] = (AK.gen() - P[0]) / P[r]
+        for i in range(1, r):
+            tau[i-1, i] = 1
+            tau[r-1, i] = -P[i]/P[r]
+        AndersonMotive_general.__init__(self, category, tau, 0, names)
+        Ktau = phi.ore_polring()
+        self.register_coercion(DrinfeldToAnderson(Homset(Ktau, self), phi))
+        try:
+            Ktau.register_conversion(AndersonToDrinfeld(Homset(self, Ktau), phi))
+        except AssertionError:
+            pass
+        self._drinfeld_module = phi
+
+    def drinfeld_module(self):
+        return self._drinfeld_module
