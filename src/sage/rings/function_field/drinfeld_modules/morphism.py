@@ -822,4 +822,5 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
     def anderson_motive(self, names_domain=None, names_codomain=None):
         M = self.domain().anderson_motive(names=names_domain)
         N = self.codomain().anderson_motive(names=names_codomain)
-        return M.hom({M.gen(0): self._ore_polynomial * N.gen(0)})
+        H = N.Hom(M)
+        return H(self)

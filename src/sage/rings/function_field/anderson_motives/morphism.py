@@ -18,13 +18,13 @@ class AndersonMotiveMorphism(OreModuleMorphism):
             domain = parent.domain()
             codomain = parent.codomain()
             if not isinstance(domain, AndersonMotive_drinfeld)\
-            or domain.drinfeld_module() is not im_gens.domain():
-                raise ValueError("the domain must be the Anderson module of the domain of the isogeny")
+            or domain.drinfeld_module() is not im_gens.codomain():
+                raise ValueError("the domain must be the Anderson module of the codomain of the isogeny")
             if not isinstance(codomain, AndersonMotive_drinfeld)\
-            or codomain.drinfeld_module() is not im_gens.codomain():
-                raise ValueError("the codomain must be the Anderson module of the codomain of the isogeny")
+            or codomain.drinfeld_module() is not im_gens.domain():
+                raise ValueError("the codomain must be the Anderson module of the domain of the isogeny")
             u = im_gens._ore_polynomial
-            im_gens = {domain.gen(0): u*codomain.gen(0)}
+            im_gens = {codomain.gen(0): u*domain.gen(0)}
             check = False
         OreModuleMorphism.__init__(self, parent, im_gens, check)
 
