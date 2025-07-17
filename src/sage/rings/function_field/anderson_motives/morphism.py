@@ -28,6 +28,14 @@ class AndersonMotiveMorphism(OreModuleMorphism):
             check = False
         OreModuleMorphism.__init__(self, parent, im_gens, check)
 
+    def characteristic_polynomial(self, var='X'):
+        chi = OreModuleMorphism.characteristic_polynomial(self, var)
+        A = self.domain().function_ring()
+        return chi.change_ring(A)
+
+    charpoly = characteristic_polynomial
+
+
 class AndersonMotive_homspace(OreModule_homspace):
     Element = AndersonMotiveMorphism
 
