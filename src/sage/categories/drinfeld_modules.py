@@ -440,7 +440,7 @@ class DrinfeldModules(Category_over_base_ring):
 
         ::
 
-            sage: psi = DrinfeldModule(A, [Frac(A).gen(), 1])
+            sage: psi = DrinfeldModule(A, [T, 1])
             sage: C = psi.category()
             sage: C.characteristic()
             0
@@ -641,7 +641,7 @@ class DrinfeldModules(Category_over_base_ring):
 
             The base can be infinite::
 
-                sage: sigma = DrinfeldModule(A, [Frac(A).gen(), 1])
+                sage: sigma = DrinfeldModule(A, [T, 1])
                 sage: sigma.base()
                 Fraction Field of Univariate Polynomial Ring in T over Finite Field in z2 of size 5^2 over its base
             """
@@ -666,7 +666,7 @@ class DrinfeldModules(Category_over_base_ring):
 
             The base field can be infinite::
 
-                sage: sigma = DrinfeldModule(A, [Frac(A).gen(), 1])
+                sage: sigma = DrinfeldModule(A, [T, 1])
                 sage: sigma.base_morphism()
                 Coercion map:
                   From: Univariate Polynomial Ring in T over Finite Field in z2 of size 5^2
@@ -713,8 +713,7 @@ class DrinfeldModules(Category_over_base_ring):
             ::
 
                 sage: B.<Y> = Fq[]
-                sage: L = Frac(B)
-                sage: psi = DrinfeldModule(A, [L(1), 0, 0, L(1)])
+                sage: psi = DrinfeldModule(A, [B(1), 0, 0, 1])
                 sage: psi.characteristic()
                 Traceback (most recent call last):
                 ...
