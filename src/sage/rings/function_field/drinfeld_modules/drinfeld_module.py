@@ -793,7 +793,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: phi
             Drinfeld module defined by T |--> z12^5*τ^2 + z12^3*τ + 2*z12^11 + 2*z12^10 + z12^9 + 3*z12^8 + z12^7 + 2*z12^5 + 2*z12^4 + 3*z12^3 + z12^2 + 2*z12
         """
-        return f'Drinfeld module defined by {self._function_ring.gen()} ' \
+        return f'Drinfeld module {self._function_ring.gen()} ' \
                f'|--> {self._gen}'
 
     def _test_category(self, **options):
@@ -1101,8 +1101,9 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: J_phi[((1, 2), (7, 4, 1))]
             T^11 + 3*T^10 + T^9 + 4*T^8 + T^7 + 2*T^6 + 2*T^4 + 3*T^3 + 2*T^2 + 3
         """
-        return {parameter: self.j_invariant(parameter, check=False)
-                for parameter in self.basic_j_invariant_parameters(nonzero=nonzero)}
+        from sage.misc.pretty import PrettyPrint
+        return PrettyPrint({parameter: self.j_invariant(parameter, check=False)
+                for parameter in self.basic_j_invariant_parameters(nonzero=nonzero)})
 
     def coefficient(self, n):
         r"""

@@ -575,4 +575,5 @@ class DrinfeldModuleHomset(Homset):
                     u += zs[i] * t**j * sum(a[k] * phiT**k for k in range(a.degree() + 1))
             isogenies.append(self(u))
 
-        return isogenies
+        from sage.misc.pretty import PrettyPrint
+        return PrettyPrint(isogenies)
