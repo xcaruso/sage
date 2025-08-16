@@ -75,7 +75,7 @@ class SubmoduleHelper(metaclass=ClasscallMetaclass):
             sage: SH = SubmoduleHelper(matrix(R, [[x, 3 + y]]))
             Traceback (most recent call last):
             ...
-            NotImplementedError: submodules and quotients are only implemented over PID
+            NotImplementedError: submodules and quotients are only implemented over PIDs
         """
         base = mat.base_ring()
         if base in Fields():
@@ -86,7 +86,7 @@ class SubmoduleHelper(metaclass=ClasscallMetaclass):
         elif base in PrincipalIdealDomains():
             cls = SubmoduleHelper_PID
         else:
-            raise NotImplementedError("submodules and quotients are only implemented over PID")
+            raise NotImplementedError("submodules and quotients are only implemented over PIDs")
         return cls.__call__(mat, saturate)
 
     def __hash__(self):
@@ -130,8 +130,16 @@ class SubmoduleHelper(metaclass=ClasscallMetaclass):
             sage: SH2 = SubmoduleHelper(matrix(Fq, [[2, 6]]))
             sage: SH1 == SH2
             True
+
+        ::
+
+            sage: SHZ = SubmoduleHelper(matrix(ZZ, [[1, 3]]))
+            sage: SHZ == SH1
+            False
         """
-        return self.basis == other.basis
+        sb = self.basis
+        ob = other.basis
+        return sb.parent() is ob.parent() and sb == ob
 
 
 class SubmoduleHelper_field(SubmoduleHelper):
