@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # sage.doctest: needs sage.rings.finite_rings
 r"""
 Drinfeld modules
@@ -128,8 +127,8 @@ class DrinfeldModule(Parent, UniqueRepresentation):
     - ``gen`` -- the generator of the Drinfeld module; as a list of
       coefficients or an Ore polynomial
 
-    - ``name`` -- (default: ``'τ'``) the name of the Ore polynomial ring
-      generator
+    - ``name`` -- (default: ``'τ'``) the name of the Ore
+      polynomial ring generator
 
     .. RUBRIC:: Construction
 
@@ -163,7 +162,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         False
 
     In those examples, we used a list of coefficients (``[z, 1, 1]``) to
-    represent the generator `\phi_T = z + τ + τ^2`. One can also use
+    represent the generator `\phi_T = z + \tau + \tau^2`. One can also use
     regular Ore polynomials::
 
         sage: ore_polring = phi.ore_polring()
