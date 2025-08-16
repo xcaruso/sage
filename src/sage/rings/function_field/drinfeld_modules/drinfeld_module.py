@@ -2066,9 +2066,9 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         Return the `n`-th iterate relative Frobenius of this Drinfeld module.
 
         By definition, the relative Frobenius is the isogeny represented by
-        the Ore polynomial `tau^d` where `d` is the degree of the characteristic
+        the Ore polynomial `\tau^d` where `d` is the degree of the characteristic
         of this Drinfeld module (which is also the degree of `\gamma(T)` over
-        the `\mathbb F_q`).
+        `\mathbb F_q`, where `\gamma` is the base morphism `\mathbb F_q[T] \to K`).
 
         INPUT:
 
@@ -2082,17 +2082,17 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: phi = DrinfeldModule(A, [1, z, z])
             sage: phi.frobenius_relative()
             Drinfeld Module morphism:
-              From: Drinfeld module defined by T |--> z*t^2 + z*t + 1
-              To:   Drinfeld module defined by T |--> (2*z^2 + 4*z + 4)*t^2 + (2*z^2 + 4*z + 4)*t + 1
-              Defn: t
+              From: Drinfeld module defined by T |--> z*τ^2 + z*τ + 1
+              To:   Drinfeld module defined by T |--> (2*z^2 + 4*z + 4)*τ^2 + (2*z^2 + 4*z + 4)*τ + 1
+              Defn: τ
             sage: phi.frobenius_relative(2)
             Drinfeld Module morphism:
-              From: Drinfeld module defined by T |--> z*t^2 + z*t + 1
-              To:   Drinfeld module defined by T |--> (3*z^2 + 1)*t^2 + (3*z^2 + 1)*t + 1
-              Defn: t^2
+              From: Drinfeld module defined by T |--> z*τ^2 + z*τ + 1
+              To:   Drinfeld module defined by T |--> (3*z^2 + 1)*τ^2 + (3*z^2 + 1)*τ + 1
+              Defn: τ^2
 
-        When `n` is the degree of `F` over `\FF_q(\gamma(T))`, we obtain
-        the Frobenius endomorphism::
+        If `K` is finite and `n` is the degree of `K` over `\mathbb F_q(\gamma(T))`,
+        we obtain the Frobenius endomorphism::
 
             sage: phi.frobenius_relative(3) == phi.frobenius_endomorphism()
             True
@@ -2102,11 +2102,11 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
             sage: psi = DrinfeldModule(A, [z, z, 1])
             sage: psi.frobenius_relative()
-            Endomorphism of Drinfeld module defined by T |--> t^2 + z*t + z
-              Defn: t^3
+            Endomorphism of Drinfeld module defined by T |--> τ^2 + z*τ + z
+              Defn: τ^3
             sage: psi.frobenius_endomorphism()
-            Endomorphism of Drinfeld module defined by T |--> t^2 + z*t + z
-              Defn: t^3
+            Endomorphism of Drinfeld module defined by T |--> τ^2 + z*τ + z
+              Defn: τ^3
 
         When the characteristic is zero, the relative Frobenius is not defined
         and an error is raised::
