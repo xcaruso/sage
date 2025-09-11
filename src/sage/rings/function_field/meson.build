@@ -53,6 +53,5 @@ endforeach
 
 install_subdir(
   'drinfeld_modules',
-  'anderson_motives',
   install_dir: sage_install_dir / 'rings/function_field',
 )
