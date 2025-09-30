@@ -78,6 +78,7 @@ py.install_sources(
   'persist.pyx',
   'pickle_old.pyx',
   'prandom.py',
+  'pretty.py',
   'profiler.py',
   'proof.py',
   'python.py',
