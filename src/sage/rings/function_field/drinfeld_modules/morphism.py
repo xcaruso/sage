@@ -3,7 +3,7 @@ r"""
 Drinfeld module morphisms
 
 This module provides the class
-:class:`sage.rings.function_fields.drinfeld_module.morphism.DrinfeldModuleMorphism`.
+:class:`sage.rings.function_field.drinfeld_modules.morphism.DrinfeldModuleMorphism`.
 
 AUTHORS:
 - Antoine Leudière (2022-04)
@@ -606,7 +606,7 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
             ...
             ValueError: the two morphisms must have the same domain
 
-        SEEALSO::
+        .. SEEALSO::
 
             :meth:`left_lcm`
         """
@@ -654,7 +654,7 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
             ...
             ValueError: the two morphisms must have the same domain
 
-        SEEALSO::
+        .. SEEALSO::
 
             :meth:`right_gcd`
         """
@@ -933,7 +933,7 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
 
     def anderson_motive(self, names_domain=None, names_codomain=None):
         r"""
-        Return the morphism giving the action of this isogeny on
+        Return the morphism giving the action of this morphism on
         the Anderson motives.
 
         INPUT:
@@ -956,9 +956,9 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
             sage: u = phi.hom(tau + 1)
             sage: f = u.anderson_motive()
             sage: f
-            Anderson motive morphism:
-              From: Anderson motive of rank 3 over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
-              To:   Anderson motive of rank 3 over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
+            Morphism:
+              From: Anderson motive of Drinfeld module defined by T |--> (2*z^2 + 4*z + 4)*τ^3 + (3*z^2 + 2*z + 2)*τ^2 + (2*z^2 + 3*z + 4)*τ + z
+              To:   Anderson motive of Drinfeld module defined by T |--> z*τ^3 + τ^2 + z
             sage: f.matrix()
             [                1                 1                 0]
             [                0                 1                 1]
@@ -977,9 +977,9 @@ class DrinfeldModuleMorphism(Morphism, UniqueRepresentation,
 
             sage: f = u.anderson_motive(names_domain='a', names_codomain='b')
             sage: f
-            Anderson motive morphism:
-              From: Anderson motive <b0, b1, b2> over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
-              To:   Anderson motive <a0, a1, a2> over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
+            Morphism:
+              From: Anderson motive <b0, b1, b2> of Drinfeld module defined by T |--> (2*z^2 + 4*z + 4)*τ^3 + (3*z^2 + 2*z + 2)*τ^2 + (2*z^2 + 3*z + 4)*τ + z
+              To:   Anderson motive <a0, a1, a2> of Drinfeld module defined by T |--> z*τ^3 + τ^2 + z
 
         .. SEEALSO::
 

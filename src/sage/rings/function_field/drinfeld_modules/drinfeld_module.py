@@ -2,12 +2,12 @@
 r"""
 Drinfeld modules
 
-This module provides the class
-:class:`sage.rings.function_field.drinfeld_module.drinfeld_module.DrinfeldModule`.
+For Drinfeld modules in characteristic zero and the analytic theory, see
+:mod:`sage.rings.function_field.drinfeld_modules.drinfeld_module_charzero`
 
-For finite Drinfeld modules and their theory of complex multiplication, see
-class
-:class:`sage.rings.function_field.drinfeld_module.drinfeld_module_finite.DrinfeldModule`.
+For Drinfeld modules over finite field and their theory of complex
+multiplication, see
+:mod:`sage.rings.function_field.drinfeld_modules.drinfeld_module_finite`
 
 AUTHORS:
 
@@ -72,7 +72,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
     .. NOTE::
 
-        See also :class:`sage.categories.drinfeld_modules`.
+        See also :mod:`sage.categories.drinfeld_modules`.
 
     The *base morphism* is the morphism `\gamma: \GF{q}[T] \to K`.
     The monic polynomial that generates the kernel of `\gamma` is called
@@ -226,7 +226,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
     Note that the base field is *not* the field `K`. Rather, it is a
     ring extension
-    (see :class:`sage.rings.ring_extension.RingExtension`) whose
+    (see :mod:`sage.rings.ring_extension`) whose
     underlying ring is `K` and whose base is the base morphism::
 
         sage: phi.base() is K
@@ -339,7 +339,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
           Defn: 0
 
     The underlying Ore polynomial is retrieved with the method
-    :meth:`ore_polynomial`::
+    :meth:`sage.rings.function_field.drinfeld_modules.morphism.DrinfeldModuleMorphism.ore_polynomial`::
 
         sage: frobenius_endomorphism.ore_polynomial()
         τ^6
@@ -395,7 +395,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
     `\GF{q}[T]`-module structure on any field extension `L/K`. Let
     `x \in L` and `a` be in the function ring; the action is defined as
     `(a, x) \mapsto \phi_a(x)`. The method :meth:`action` returns a
-    :class:`sage.rings.function_field.drinfeld_modules.action.Action`
+    :class:`sage.rings.function_field.drinfeld_modules.action.DrinfeldModuleAction`
     object representing the Drinfeld module action.
 
     .. NOTE::
@@ -845,7 +845,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
     def action(self):
         r"""
         Return the action object
-        (:class:`sage.rings.function_field.drinfeld_modules.action.Action`)
+        (:class:`sage.rings.function_field.drinfeld_modules.action.DrinfeldModuleAction`)
         that represents the module action, on the base codomain, that is
         induced by the Drinfeld module.
 
@@ -1194,7 +1194,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         INPUT:
 
         - ``A_field`` -- a field or an instance of
-          class:`sage.rings.ring_extension.RingExtension`
+          :class:`sage.rings.ring_extension.RingExtension_generic`
 
         EXAMPLES::
 
@@ -2086,9 +2086,10 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             raise ValueError("%s is not element of the function ring" % x)
         return self.Hom(self)(x)
 
-    def anderson_motive(self, names=None):
+    def anderson_motive(self, dual=False, names=None):
         r"""
-        Return the Anderson motive attached to this Drinfeld module.
+        Return the Anderson motive, or its dual depending on the
+        attribute ``dual``, attached to this Drinfeld module.
 
         By definition, the Anderson motive of a Drinfeld module
         `\phi : A \to K\{\tau\}` is `K\{\tau\}` endowed by:
@@ -2100,6 +2101,8 @@ class DrinfeldModule(Parent, UniqueRepresentation):
           left multiplication
 
         INPUT:
+
+        - ``dual`` - a boolean (default: ``False``)
 
         - ``names`` - a string of a list of strings (default: ``None``),
           the names of the vector of the canonical basis; if ``None``,
@@ -2113,7 +2116,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: phi = DrinfeldModule(A, [z, 0, 1, z])
             sage: M = phi.anderson_motive()
             sage: M
-            Anderson motive of rank 3 over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
+            Anderson motive of Drinfeld module defined by T |--> z*τ^3 + τ^2 + z
 
         Here the rank of the Anderson motive should be understood as its
         rank over `A \otimes K`; it is also the rank `r` of the underlying
@@ -2129,7 +2132,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
             sage: M = phi.anderson_motive(names='e')
             sage: M
-            Anderson motive <e0, e1, e2> over Univariate Polynomial Ring in T over Finite Field in z of size 5^3
+            Anderson motive <e0, e1, e2> of Drinfeld module defined by T |--> z*τ^3 + τ^2 + z
             sage: M.basis()
             [e0, e1, e2]
 
@@ -2140,7 +2143,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             in SageMath.
         """
         from sage.rings.function_field.drinfeld_modules.anderson_motive import AndersonMotive_drinfeld
-        return AndersonMotive_drinfeld(self, names=names)
+        return AndersonMotive_drinfeld(self, dual, names=names)
 
     def frobenius_relative(self, n=1):
         r"""

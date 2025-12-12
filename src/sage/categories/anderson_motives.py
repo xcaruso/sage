@@ -3,7 +3,7 @@ Anderson motives
 
 AUTHOR:
 
-- Xavier Caruso (2025-11): initial version
+- Xavier Caruso, Antoine Leudière (2025-11): initial version
 """
 
 # *****************************************************************************
@@ -18,6 +18,7 @@ AUTHOR:
 
 
 from sage.misc.latex import latex
+from sage.matrix.special import identity_matrix
 
 from sage.categories.modules import Modules
 from sage.categories.ore_modules import OreModules
@@ -92,7 +93,7 @@ class AndersonMotives(OreModules):
         """
         self._drinfeld_category = category
         self._base_morphism = category.base_morphism()
-        self._base_field = category.base()
+        self._A_field = category.base()
         self._function_ring = A = category.function_ring()
         self._base_over_constants_field = category.base_over_constants_field()
         self._ore_variable_name = category._ore_variable_name
@@ -206,8 +207,7 @@ class AndersonMotives(OreModules):
             sage: C.A_field()
             Finite Field in z of size 3^3 over its base
         """
-        f = self._base_morphism
-        return f.codomain().over(f)
+        return self._A_field
 
     def base(self):
         r"""
@@ -278,7 +278,7 @@ class AndersonMotives(OreModules):
         """
         return self._function_ring
 
-    def object(self, tau=None):
+    def object(self, tau=None, names=None):
         r"""
         Return the object in this category with `\tau`-action
         given by the matrix ``tau``.
@@ -286,6 +286,10 @@ class AndersonMotives(OreModules):
         INPUT:
 
         - ``tau`` -- a matrix or ``None`` (default: ``None``);
+          if ``None``, return the trivial Anderson module in this
+          category
+
+        - ``names`` -- a matrix or ``None`` (default: ``None``);
           if ``None``, return the trivial Anderson module in this
           category
 
@@ -311,8 +315,17 @@ class AndersonMotives(OreModules):
             [T 1]
             [z 1]
         """
-        from sage.rings.function_field.drinfeld_modules.anderson_motive import AndersonMotive
-        return AndersonMotive(self, tau)
+        from sage.rings.function_field.drinfeld_modules.anderson_motive import AndersonMotive_general
+        if tau is None:
+            tau = identity_matrix(self._base_combined, 1)
+        det = tau.determinant()
+        if det == 0:
+            raise ValueError("the given matrix does not define an Anderson motive in this category")
+        h = det.degree()
+        disc, R = det.quo_rem(self._divisor ** h)
+        if R:
+            raise ValueError("the given matrix does not define an Anderson motive in this category")
+        return AndersonMotive_general(self, tau, names=names)
 
     def super_categories(self):
         """
@@ -326,8 +339,8 @@ class AndersonMotives(OreModules):
             sage: C.super_categories()
             [Category of Ore modules over Univariate Polynomial Ring in T over Finite Field in z of size 3^3 twisted by T |--> T, with map of base ring]
         """
-        S = self._ore_polring
-        return [OreModules(S.base(), S)]
+        AKtau = self._ore_polring
+        return [OreModules(AKtau.base(), AKtau)]
 
     class ParentMethods:
 
