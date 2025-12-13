@@ -102,7 +102,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         sage: psi
         Drinfeld module defined by T |--> (T + 1)*τ + T
         sage: psi.base()
-        Fraction Field of Univariate Polynomial Ring in T over Finite Field in z2 of size 7^2 over its base
+        Fraction Field of Univariate Polynomial Ring in T over Finite Field in z2 of size 7^2
 
     .. NOTE::
 
@@ -214,7 +214,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
     :meth:`base`::
 
         sage: phi.base()
-        Finite Field in z of size 3^12 over its base
+        Finite Field in z of size 3^12
 
     The base morphism is retrieved using :meth:`base_morphism`::
 
@@ -223,14 +223,6 @@ class DrinfeldModule(Parent, UniqueRepresentation):
           From: Univariate Polynomial Ring in T over Finite Field in z2 of size 3^2
           To:   Finite Field in z of size 3^12
           Defn: T |--> z
-
-    Note that the base field is *not* the field `K`. Rather, it is a
-    ring extension
-    (see :mod:`sage.rings.ring_extension`) whose
-    underlying ring is `K` and whose base is the base morphism::
-
-        sage: phi.base() is K
-        False
 
     .. RUBRIC:: Getters
 
@@ -404,7 +396,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
 
             sage: action = phi.action()
             sage: action
-            Action on Finite Field in z of size 3^12 over its base
+            Action on Finite Field in z of size 3^12
              induced by Drinfeld module defined by T |--> τ^2 + τ + z
 
     The action on elements is computed by calling the action object::
@@ -712,7 +704,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         ::
 
             sage: a = A.random_element(5)
-            sage: phi(a)[0] == phi.category().base()(a)
+            sage: phi(a)[0] == phi.A_field()(a)
             True
         """
         return self._morphism(a)
@@ -860,7 +852,7 @@ class DrinfeldModule(Parent, UniqueRepresentation):
             sage: phi = DrinfeldModule(A, [p_root, z12^3, z12^5])
             sage: action = phi.action()
             sage: action
-            Action on Finite Field in z12 of size 5^12 over its base
+            Action on Finite Field in z12 of size 5^12
              induced by Drinfeld module defined by T |--> z12^5*τ^2 + z12^3*τ + 2*z12^11
               + 2*z12^10 + z12^9 + 3*z12^8 + z12^7 + 2*z12^5 + 2*z12^4 + 3*z12^3 + z12^2 + 2*z12
 
@@ -1448,7 +1440,6 @@ class DrinfeldModule(Parent, UniqueRepresentation):
         if absolutely:
             return True
         else:
-            ue = ue.backend(force=True)
             try:
                 _ = ue.nth_root(e)
             except ValueError:
