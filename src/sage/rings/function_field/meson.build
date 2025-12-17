@@ -56,5 +56,7 @@ foreach name, pyx : extension_data
   )
 endforeach
 
-install_subdir('drinfeld_modules', install_dir: sage_install_dir / 'rings/function_field')
-install_subdir('anderson_motives', install_dir: sage_install_dir / 'rings/function_field')
+install_subdir(
+  'drinfeld_modules',
+  install_dir: sage_install_dir / 'rings/function_field',
+)
