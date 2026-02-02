@@ -146,7 +146,7 @@ from sage.structure.element import Element
 from sage.structure.category_object import check_default_category
 from sage.structure.category_object import normalize_names
 
-import sage.categories as categories
+from sage import categories
 from sage.categories.morphism import IdentityMorphism
 from sage.categories.principal_ideal_domains import PrincipalIdealDomains
 from sage.categories.rings import Rings
